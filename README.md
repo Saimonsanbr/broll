@@ -13,8 +13,36 @@ Como funciona: você pesquisa um termo, passa o mouse pra ver a prévia, clica u
 Na aba **Releases** aqui do GitHub tem versões prontas:
 
 - **macOS Apple Silicon** (`-arm64.dmg`) — testado
-- **macOS Intel** (`-x64.dmg`) — buildado no CI, precisa de confirmação
+- **macOS Intel** (`.dmg` sem `-arm64` no nome) — buildado no CI, precisa de confirmação
 - **Windows** e **Linux** — buildados no CI, ainda não testados
+
+## Instalando
+
+O app **não é assinado** (não temos certificado pago de desenvolvedor), então Mac e Windows reclamam na primeira abertura. É normal e seguro — o código é aberto e está todo aqui no repo.
+
+### macOS (Apple Silicon e Intel)
+
+1. Baixe o `.dmg` certo: com `-arm64` no nome = Apple Silicon (M1/M2/...); sem `-arm64` = Intel.
+2. Abra o `.dmg` e arraste o **broll** pra pasta **Aplicativos**.
+3. Na primeira abertura o macOS vai bloquear ("não foi possível verificar o desenvolvedor"). Pra liberar, abra o Terminal e rode:
+
+```bash
+xattr -cr /Applications/broll.app
+```
+
+4. Abra o app normalmente (se ainda reclamar, clique com o botão direito no app → Abrir → Abrir).
+
+O `xattr -cr` só remove o selo de quarentena que o macOS coloca em tudo que é baixado da internet — não mexe em nada no sistema.
+
+### Windows
+
+1. Baixe o `broll.Setup.X.Y.Z.exe` (instalador) ou o portable.
+2. O SmartScreen vai avisar que é de um editor desconhecido: clique em **Mais informações** → **Executar assim mesmo**.
+
+### Linux
+
+- **AppImage:** dê permissão e rode (`chmod +x broll-*.AppImage`); se faltar o FUSE: `sudo apt install libfuse2`.
+- **.deb (Debian/Ubuntu):** dois cliques no arquivo ou `sudo dpkg -i broll_*_amd64.deb`.
 
 ## Rodando o código
 
