@@ -7,6 +7,41 @@ const Store = require('electron-store');
 
 const store = new Store({ name: 'broll-config' });
 
+// ---- logs persistentes: arquivo por dia + buffer da sessão (nada na interface) ----
+const LOG_BUF_MAX = 500;
+const LOG_KEEP_DAYS = 7;
+const sessionLogs = [];
+function logDir() {
+  try {
+    const dir = path.join(app.getPath('userData'), 'logs');
+    fs.mkdirSync(dir, { recursive: true });
+    return dir;
+  } catch { return require('os').tmpdir(); }
+}
+function logFile() {
+  const d = new Date();
+  const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return path.join(logDir(), `broll-${day}.log`);
+}
+function pruneLogs() {
+  try {
+    const dir = logDir();
+    const files = fs.readdirSync(dir).filter(f => /^broll-\d{4}-\d{2}-\d{2}\.log$/.test(f)).sort();
+    while (files.length > LOG_KEEP_DAYS) fs.unlinkSync(path.join(dir, files.shift()));
+  } catch {}
+}
+const fmtArg = (x) => { try { return typeof x === 'string' ? x : JSON.stringify(x); } catch { return String(x); } };
+function writeLogLine(level, msg) {
+  const line = `[${new Date().toISOString()}] [${level}] ${msg}`;
+  sessionLogs.push(line);
+  if (sessionLogs.length > LOG_BUF_MAX) sessionLogs.shift();
+  try { fs.appendFileSync(logFile(), line + '\n'); } catch {}
+}
+const _stdoutLog = console.log.bind(console);
+const _stderrLog = console.error.bind(console);
+console.log = (...a) => { try { writeLogLine('LOG', a.map(fmtArg).join(' ')); } catch {} _stdoutLog(...a); };
+console.error = (...a) => { try { writeLogLine('ERR', a.map(fmtArg).join(' ')); } catch {} _stderrLog(...a); };
+
 const MIN_HEIGHT = 360;
 const SEARCH_GAP_MS = 450;   // pausa leve entre buscas (rate-limit)
 const DOWNLOAD_GAP_MS = 700; // pausa leve entre downloads em lote
@@ -56,6 +91,16 @@ function pickPixabayRendition(videos, maxH) {
   const above = cands.filter(v => qOf(v) > maxH).sort((a, b) => qOf(a) - qOf(b));
   if (above.length) return above[0];
   return [...cands].sort((a, b) => qOf(b) - qOf(a))[0];
+}
+
+// a API do Pixabay retorna só a biblioteca gratuita, mas por segurança
+// descartamos qualquer hit com sinal de conteúdo patrocinado (sem licença livre)
+const SPONSORED_RE = /(shutterstock|istock|getty|sponsored|adobe stock)/i;
+function isSponsoredPixabay(h) {
+  try {
+    const hay = [h.user, h.pageURL, h.tags || ''].filter(Boolean).join(' ');
+    return SPONSORED_RE.test(hay);
+  } catch { return false; }
 }
 
 function smallestPreviewPexels(videoFiles) {
@@ -140,6 +185,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   ensureCache();
+  pruneLogs();
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
@@ -263,7 +309,9 @@ ipcMain.handle('search:videos', async (_e, { query, pages = { pex: 1, pix: 1 }, 
     await new Promise(r => setTimeout(r, 250));
     try {
       const data = await searchPixabay(query, pages.pix, perPage, pixabayKey);
+      let skippedPix = 0;
       for (const h of data.hits || []) {
+        if (isSponsoredPixabay(h)) { skippedPix++; continue; } // patrocinado não tem licença livre: fora
         const chosen = pickPixabayRendition(h.videos || {}, maxQuality);
         if (!chosen) continue;
         out.push({
@@ -281,6 +329,7 @@ ipcMain.handle('search:videos', async (_e, { query, pages = { pex: 1, pix: 1 }, 
       }
       hasMore.pix = (data.hits || []).length >= perPage;
       fetched.pix = true;
+      if (skippedPix) console.log(`[broll] pixabay: ${skippedPix} resultado(s) patrocinado(s) ignorado(s)`);
     } catch (err) {
       const s = err?.response?.status;
       errors.push(s === 429 ? 'Pixabay: limite atingido, aguarde e role de novo.' : `Pixabay: ${err.message}`);
@@ -401,3 +450,6 @@ ipcMain.handle('cache:clear', () => {
   try { for (const f of fs.readdirSync(dir)) { try { fs.rmSync(path.join(dir, f), { recursive: true, force: true }); } catch {} } } catch {}
   return true;
 });
+
+// logs da sessão atual (p/ o botão "Mostrar logs") + caminho do arquivo do dia
+ipcMain.handle('logs:get', () => ({ file: logFile(), lines: [...sessionLogs] }));

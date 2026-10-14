@@ -264,5 +264,15 @@ $('#btnClear').addEventListener('click', async () => {
   for (const [, st] of state.items) { st.status = 'remote'; st.filePath = null; }
   await refreshConfigUI();
 });
+$('#btnLogs').addEventListener('click', async () => {
+  const box = $('#sessionLogs');
+  if (!box.classList.contains('hidden')) { box.classList.add('hidden'); $('#btnLogs').textContent = 'Mostrar logs'; return; }
+  const { file, lines } = await window.broll.getLogs();
+  $('#logPath').textContent = file;
+  box.textContent = lines.length ? lines.join('\n') : 'nada registrado ainda nesta sessão.';
+  box.classList.remove('hidden');
+  $('#btnLogs').textContent = 'Ocultar logs';
+  box.scrollTop = box.scrollHeight;
+});
 
 refreshConfigUI();

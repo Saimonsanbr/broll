@@ -43,6 +43,19 @@ Mesmo assim, fique ciente: **esse caminho não é oficial**. Ele pode parar de f
 
 O endpoint de conteúdo patrocinado (`getty-media`) foi deixado de fora de propósito — só entra conteúdo gratuito com licença livre.
 
+## Posso usar os vídeos no YouTube? (segurança de licença)
+
+Resposta curta: **sim, pode — sem precisar colocar nome nem link de ninguém no vídeo ou na descrição.**
+
+- **Pexels:** a [licença](https://www.pexels.com/license/) libera tudo de graça, cita o YouTube nominalmente como uso permitido e **não exige atribuição** (só agradece se você der).
+- **Pixabay:** a [licença de conteúdo](https://pixabay.com/service/terms/) também libera uso gratuito comercial e não-comercial **sem atribuição obrigatória**. O site mistura resultados patrocinados (Shutterstock/iStock, marcados com logo) no meio da busca — mas esses **não têm licença livre e não vêm pela API**, que retorna só a biblioteca gratuita. Mesmo assim, o app tem um **filtro defensivo**: qualquer resultado com sinal de patrocinado é descartado em silêncio (só aparece no log do app, nada muda pra você).
+- **O crédito que aparece no app fica** — não é exigência pro seu vídeo, é exigência das **APIs**: Pexels e Pixabay pedem que o programa mostre a fonte dos resultados. No seu vídeo/descrição, o crédito é opcional.
+- **Ressalvas que valem pras duas:** evite b-roll com pessoa reconhecível em contexto ofensivo/sensível ou marca/logo em destaque em vídeo comercial — nesses casos a licença joga a responsabilidade pra você. Pra b-roll típico (natureza, cidade, objetos), isso é irrelevante.
+
+## Logs do app
+
+Tudo que o app faz é registrado num arquivinho de log por dia (pasta de dados do app, mantém os últimos 7 dias) — busca, downloads, arrastos, filtros e erros. Nas configurações, o botão **Mostrar logs** (por último, lá embaixo) exibe o que rolou desde que o app foi aberto. Útil pra diagnosticar qualquer problema sem precisar de terminal.
+
 ## Licenças
 
 - **Código do app:** [MIT](LICENSE) — pode usar, copiar e modificar à vontade.

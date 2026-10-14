@@ -67,5 +67,6 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system
 .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
 .btn.danger{background:transparent;border:1px solid #5a3535;color:#ff8a8a}
 .logs{background:#111114;border:1px solid var(--line);border-radius:10px;padding:10px;min-height:90px;white-space:pre-wrap;font-size:12px;color:#d7d7db}
+#sessionLogs{max-height:220px;overflow:auto}
 .mini{font-size:12px;color:var(--mut)}
 #scrim{position:fixed;inset:0;background:#00000066;z-index:10}

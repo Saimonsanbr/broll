@@ -20,6 +20,7 @@ win:
     - portable
 linux:
   icon: assets/icon.png
+  maintainer: Saimonsanbr <173215854+Saimonsanbr@users.noreply.github.com>
   target:
     - AppImage
     - deb
