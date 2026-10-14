@@ -1,0 +1,37 @@
+name: dist
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          # macOS Apple Silicon (arm64) — testado
+          - os: macos-latest
+            name: mac-arm64
+          # macOS Intel (x64) — label Intel disponível até ago/2027
+          - os: macos-15-intel
+            name: mac-intel
+          # Windows — ainda NÃO testado
+          - os: windows-latest
+            name: win
+          # Linux — ainda NÃO testado
+          - os: ubuntu-latest
+            name: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: broll-${{ matrix.name }}
+          path: release/

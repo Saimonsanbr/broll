@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>broll</title>
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<header id="topbar" class="hidden">
+  <div class="brand"><span class="dot"></span><strong>broll</strong></div>
+  <div class="searchwrap small">
+    <svg viewBox="0 0 24 24" class="sicon"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <input id="searchTop" placeholder="pesquisar b-roll…" autocomplete="off" />
+  </div>
+  <div class="topactions">
+    <span id="qualityBadge" class="qbadge" title="Qualidade máxima configurada">max 1080p</span>
+    <button id="btnConfig" class="iconbtn" title="Configurações">
+      <svg viewBox="0 0 24 24"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5 3.5 3.5 0 0 0 12 8.5z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="home">
+  <div class="homecard">
+    <div class="logo"><span class="dot big"></span><h1>broll</h1></div>
+    <p class="hint">pesquise algo</p>
+    <div class="searchwrap">
+      <svg viewBox="0 0 24 24" class="sicon"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="searchHome" placeholder="ex: cidade à noite, café, mar…" autocomplete="off" />
+    </div>
+    <p id="keyWarn" class="keywarn hidden">adicione sua chave pixabay para mais resultados
+      <button id="keyWarnBtn" class="linkbtn">abrir configurações</button>
+    </p>
+    <p class="sub">Passe o mouse para prévia · 1 clique baixa · arraste o verde pro CapCut</p>
+  </div>
+</main>
+
+<section id="results" class="hidden">
+  <div id="notice"></div>
+  <div id="grid"></div>
+  <div id="loadingMore" class="hidden"><span class="spin"></span>carregando mais resultados…</div>
+  <div id="sentinel"></div>
+  <div id="empty" class="hidden">Nada por aqui. Tente outro termo.</div>
+  <footer id="credit">Vídeos: <span>Pexels</span> · <span>Pixabay</span> — crédito ao autor em cada card.</footer>
+</section>
+
+<aside id="drawer" class="hidden">
+  <div class="dhead">
+    <strong>Configurações</strong>
+    <button id="btnClose" class="iconbtn" title="Fechar">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <label>Chave Pexels (opcional — sem ela usa o modo web)<input id="inPexels" type="password" placeholder="pexels api key" /></label>
+  <label>Chave Pixabay<input id="inPixabay" type="password" placeholder="pixabay api key" /></label>
+  <div class="row">
+    <button id="btnSave" class="btn">Salvar</button>
+    <button id="btnTest" class="btn ghost">Testar as chaves</button>
+  </div>
+  <pre id="logs" class="logs">logs aparecem aqui…</pre>
+  <label>Qualidade máxima
+    <select id="selQuality">
+      <option value="720">720p</option>
+      <option value="1080" selected>1080p</option>
+    </select>
+  </label>
+  <p class="mini">Mínimo 360p. Se não houver a máxima, baixa a melhor abaixo dela.</p>
+  <div class="row">
+    <button id="btnOpen" class="btn ghost">Abrir pasta</button>
+    <button id="btnClear" class="btn danger">Limpar cache</button>
+  </div>
+  <p id="cacheInfo" class="mini"></p>
+</aside>
+<div id="scrim" class="hidden"></div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
