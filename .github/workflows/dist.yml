@@ -9,13 +9,14 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           # macOS Apple Silicon (arm64) — testado
           - os: macos-latest
             name: mac-arm64
-          # macOS Intel (x64) — label Intel disponível até ago/2027
-          - os: macos-15-intel
+          # macOS Intel (x64) — label comprovado no easybrawto
+          - os: macos-26-intel
             name: mac-intel
           # Windows — ainda NÃO testado
           - os: windows-latest
@@ -35,3 +36,23 @@ jobs:
         with:
           name: broll-${{ matrix.name }}
           path: release/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+      - uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          files: |
+            broll-mac-arm64/*.dmg
+            broll-mac-arm64/*.zip
+            broll-mac-intel/*.dmg
+            broll-mac-intel/*.zip
+            broll-win/*.exe
+            broll-linux/*.AppImage
+            broll-linux/*.deb

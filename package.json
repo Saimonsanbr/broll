@@ -1,6 +1,6 @@
 {
   "name": "broll",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Busque b-roll no Pexels + Pixabay, preview no hover, 1 clique baixa, arraste pronto pro CapCut.",
   "main": "electron/main.js",
   "scripts": {
@@ -8,10 +8,10 @@
     "dev:electron": "vite --port 5173 & sleep 1 && electron .",
     "build": "vite build",
     "start": "electron .",
-    "dist": "vite build && electron-builder",
-    "dist:mac": "vite build && electron-builder --mac",
-    "dist:win": "vite build && electron-builder --win",
-    "dist:linux": "vite build && electron-builder --linux"
+    "dist": "vite build && electron-builder --publish never",
+    "dist:mac": "vite build && electron-builder --mac --publish never",
+    "dist:win": "vite build && electron-builder --win --publish never",
+    "dist:linux": "vite build && electron-builder --linux --publish never"
   },
   "dependencies": {
     "axios": "^1.7.7",
