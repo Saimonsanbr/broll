@@ -92,6 +92,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system
 #vidThumb{width:100%;max-height:200px;object-fit:cover;border-radius:10px;background:#000}
 #vidModal label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--mut)}
 #vidModal select{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px}
+#vidModal select:disabled{opacity:.4}
 #vidModal label.disabled{opacity:.4}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .vprog{height:10px;border-radius:6px;background:#00000066;overflow:hidden}

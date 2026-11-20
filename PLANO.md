@@ -549,6 +549,9 @@ Correções previstas:
 | 2026-11-20 | Fase 6 (spike) | VHS com CRF 20 gera ~45MB em 5s (ruído não comprime) | CRF 26 só p/ VHS |
 | 2026-11-20 | Fase 6 (spike) | `format=yuv420p` sozinho mantém `yuvj420p` (full range do JPEG) | `scale=out_range=limited` antes do format; CapCut-safe |
 | 2026-11-20 | Fase 6 (spike) | Falha/cancelamento deixava `.mp4` vazio na pasta | `unlink` da saída em falha/cancelamento |
+| 2026-11-20 | Fase 6 (pós-teste) | Zoom tremia; pan era suave (jitter do `zoompan` por arredondamento) | Base do zoom em 3840×2160 (2x) antes do `zoompan` |
+| 2026-11-20 | Fase 6 (pós-teste) | VHS só amarelava a imagem | Trocado por granulado leve, vinheta e granulado+vinheta; fade mantido |
+| 2026-11-20 | Fase 6 (pós-teste) | Crédito do vídeo grande demais, quebrava feio no fim | Padrão 38 (era 44) + seletor pequeno/médio/grande no modal (apagado sem atribuição) |
 
 ---
 

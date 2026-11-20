@@ -25,7 +25,8 @@ const UA = 'broll/0.2 (https://github.com/Saimonsanbr/broll)';
 const COMPOSITIONS = ['single', 'duo'];
 const BACKGROUNDS = ['blur', 'dark', 'blur-dark'];
 const ANIMATIONS = ['zoom-in', 'zoom-out', 'pan-down', 'pan-up'];
-const FILTERS = ['none', 'vhs', 'fade'];
+const FILTERS = ['none', 'grain', 'vignette', 'grain-vignette', 'fade'];
+const CREDIT_SIZES = { small: 32, medium: 38, large: 46 };
 
 function sanitize(s) {
   return String(s || 'video').toLowerCase().normalize('NFD')
@@ -40,9 +41,11 @@ function outDir(app) {
   return dir;
 }
 
-// base 2400x1350 (margem p/ zoom/pan sem serrilhado), depois anima p/ 1920x1080
-function composeFilters(composition, background) {
-  const PRE = 'scale=2400:1350';
+// base com margem p/ animar sem serrilhado; zoom usa 2x (3840x2160) porque
+// o zoompan arredonda x/y por frame e treme em base 1.25x (jitter)
+function composeFilters(composition, background, anim) {
+  const isZoom = anim === 'zoom-in' || anim === 'zoom-out';
+  const PRE = isZoom ? 'scale=3840:2160' : 'scale=2400:1350';
   if (composition === 'duo') {
     let bg = `[0:v]scale=${VID_W}:${VID_H}:force_original_aspect_ratio=increase,crop=${VID_W}:${VID_H}`;
     if (background === 'blur' || background === 'blur-dark') bg += ',gblur=sigma=40';
@@ -62,15 +65,18 @@ function animFilter(anim) {
 }
 
 function effectFilter(filter) {
-  if (filter === 'vhs') return '[a]noise=alls=7:allf=t,eq=saturation=1.3:contrast=1.05[e]';
+  if (filter === 'grain-vignette') return '[a]noise=alls=5:allf=t,vignette=PI/4[e]';
+  if (filter === 'grain') return '[a]noise=alls=5:allf=t[e]';
+  if (filter === 'vignette') return '[a]vignette=PI/4[e]';
   if (filter === 'fade') return '[a]fade=t=in:st=0:d=0.5,fade=t=out:st=4.5:d=0.5[e]';
   return '[a]null[e]';
 }
 
 // faixa de crédito (mesmo estilo das imagens: caixa justa + respiro, Poppins)
-async function makeCreditStrip(magickBin, text, outPath) {
+async function makeCreditStrip(magickBin, text, outPath, pointsize) {
   const safe = String(text || '').replace(/"/g, "'").slice(0, 220);
-  const ps = 44, maxW = Math.round(VID_W * 0.7);
+  const ps = CREDIT_SIZES[pointsize] || CREDIT_SIZES.medium;
+  const maxW = Math.round(VID_W * 0.7);
   const bx = Math.round(ps * 0.7), by = Math.round(ps * 0.35);
   const font = poppinsPath();
   const raw = outPath.replace(/\.png$/, '-raw.png');
@@ -150,10 +156,10 @@ async function generate(app, store, args, onProgress) {
     }
 
     // 2. faixa de crédito (quando exigido)
-    let filterComplex = `${composeFilters(composition, background)};${animFilter(anim)};${effectFilter(filter)}`;
+    let filterComplex = `${composeFilters(composition, background, anim)};${animFilter(anim)};${effectFilter(filter)}`;
     let inputs = ['-loop', '1', '-framerate', String(FPS), '-t', String(DUR), '-i', src];
     if (needsCredit) {
-      const strip = await makeCreditStrip(magickBin, item.attribution.text, path.join(tmpd, 'strip.png'));
+      const strip = await makeCreditStrip(magickBin, item.attribution.text, path.join(tmpd, 'strip.png'), options.creditSize);
       inputs = inputs.concat(['-i', strip]);
       filterComplex += `;[e][1:v]overlay=(W-w)/2:24,scale=out_range=limited,format=yuv420p[v]`;
     } else {
@@ -165,7 +171,7 @@ async function generate(app, store, args, onProgress) {
     const out = uniqueOut(dir, `${sanitize(query)}-${sanitize(item.id)}-img2vid`);
 
     await new Promise((resolve, reject) => {
-      const crf = filter === 'vhs' ? '26' : '20'; // ruído do vhs não comprime: crf maior
+      const crf = (filter === 'grain' || filter === 'grain-vignette') ? '26' : '20'; // ruído não comprime: crf maior
       const ffargs = ['-y', '-hide_banner', '-nostats', '-progress', 'pipe:1',
         ...inputs, '-filter_complex', filterComplex,
         '-map', '[v]', '-r', String(FPS), '-t', String(DUR),

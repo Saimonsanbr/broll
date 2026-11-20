@@ -133,11 +133,20 @@
       <label>Filtro
         <select id="vidFilter">
           <option value="none">Nenhum</option>
-          <option value="vhs">VHS</option>
+          <option value="grain">Granulado leve</option>
+          <option value="vignette">Vinheta</option>
+          <option value="grain-vignette">Granulado + vinheta</option>
           <option value="fade">Fade in/out</option>
         </select>
       </label>
     </div>
+    <label id="vidCreditWrap">Tamanho do crédito
+      <select id="vidCreditSize">
+        <option value="small">Pequeno</option>
+        <option value="medium" selected>Médio</option>
+        <option value="large">Grande</option>
+      </select>
+    </label>
     <p class="mini">Sempre 1920×1080 · 5s · sem áudio. O crédito (quando exigido) vai estático no topo do vídeo.</p>
     <div id="vidProg" class="vprog hidden"><div id="vidProgBar"></div></div>
     <p id="vidStatus" class="mini"></p>

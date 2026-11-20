@@ -510,6 +510,9 @@ function openVidModal(id) {
   vidItemId = id;
   // thumb remoto (file:// é bloqueado na página http do dev)
   $('#vidThumb').src = st.data.thumb || '';
+  const needsCredit = Boolean(st.data.license && st.data.license.attributionRequired);
+  $('#vidCreditSize').disabled = !needsCredit;
+  $('#vidCreditWrap').classList.toggle('disabled', !needsCredit);
   $('#vidMeta').textContent = `${st.data.width}×${st.data.height} · ${st.data.source} · ${st.data.author || ''}${st.data.license && st.data.license.attributionRequired ? ' · crédito será aplicado no vídeo' : ''}`;
   $('#vidStatus').textContent = '';
   $('#vidProg').classList.add('hidden');
@@ -531,6 +534,7 @@ function closeVidModal() {
 function syncVidBg() {
   const duo = $('#vidComp').value === 'duo';
   $('#vidBgWrap').classList.toggle('disabled', !duo);
+  $('#vidBg').disabled = !duo;
 }
 
 window.broll.onVideoProgress(({ id, pct }) => {
@@ -563,7 +567,8 @@ $('#vidGenerate').addEventListener('click', async () => {
       composition: $('#vidComp').value,
       background: $('#vidBg').value,
       anim: $('#vidAnim').value,
-      filter: $('#vidFilter').value
+      filter: $('#vidFilter').value,
+      creditSize: $('#vidCreditSize').value
     }
   });
   vidGenerating = false;
