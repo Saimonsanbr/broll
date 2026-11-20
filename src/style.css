@@ -85,3 +85,16 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system
 #sessionLogs{max-height:220px;overflow:auto}
 .mini{font-size:12px;color:var(--mut)}
 #scrim{position:fixed;inset:0;background:#00000066;z-index:10}
+
+/* modal imagem -> vídeo */
+#vidModal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:30;pointer-events:none}
+#vidModal .vbox{pointer-events:auto;width:min(400px,92vw);max-height:92vh;overflow:auto;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+#vidThumb{width:100%;max-height:200px;object-fit:cover;border-radius:10px;background:#000}
+#vidModal label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--mut)}
+#vidModal select{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px}
+#vidModal label.disabled{opacity:.4}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vprog{height:10px;border-radius:6px;background:#00000066;overflow:hidden}
+.vprog div{height:100%;width:0%;background:var(--green);border-radius:6px;transition:width .2s}
+#vidStatus{min-height:18px}
+#vidScrim{position:fixed;inset:0;background:#00000066;z-index:20}

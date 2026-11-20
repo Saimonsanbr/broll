@@ -254,6 +254,12 @@ function cardEl(item) {
     if (!st || st.status !== 'ready' || !st.filePath) return;
     window.broll.startDrag({ filePath: st.filePath, id: item.id });
   });
+  // botão direito em imagem pronta = gerar vídeo (Fase 6)
+  card.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const st = state.items.get(item.id);
+    if (item.kind === 'image' && st && st.status === 'ready' && st.filePath) openVidModal(item.id);
+  });
   return card;
 }
 
@@ -493,6 +499,84 @@ $('#btnLogs').addEventListener('click', async () => {
   box.classList.remove('hidden');
   $('#btnLogs').textContent = 'Ocultar logs';
   box.scrollTop = box.scrollHeight;
+});
+
+// ---- modal imagem → vídeo (Fase 6) ----
+let vidItemId = null, vidGenerating = false;
+
+function openVidModal(id) {
+  const st = state.items.get(id);
+  if (!st || st.data.kind !== 'image' || st.status !== 'ready' || !st.filePath) return;
+  vidItemId = id;
+  // thumb remoto (file:// é bloqueado na página http do dev)
+  $('#vidThumb').src = st.data.thumb || '';
+  $('#vidMeta').textContent = `${st.data.width}×${st.data.height} · ${st.data.source} · ${st.data.author || ''}${st.data.license && st.data.license.attributionRequired ? ' · crédito será aplicado no vídeo' : ''}`;
+  $('#vidStatus').textContent = '';
+  $('#vidProg').classList.add('hidden');
+  $('#vidProgBar').style.width = '0%';
+  $('#vidGenerate').classList.remove('hidden');
+  $('#vidCancel').classList.add('hidden');
+  syncVidBg();
+  $('#vidModal').classList.remove('hidden');
+  $('#vidScrim').classList.remove('hidden');
+}
+
+function closeVidModal() {
+  if (vidGenerating && vidItemId) window.broll.cancelVideo({ id: vidItemId });
+  vidGenerating = false;
+  $('#vidModal').classList.add('hidden');
+  $('#vidScrim').classList.add('hidden');
+}
+
+function syncVidBg() {
+  const duo = $('#vidComp').value === 'duo';
+  $('#vidBgWrap').classList.toggle('disabled', !duo);
+}
+
+window.broll.onVideoProgress(({ id, pct }) => {
+  if (id !== vidItemId || !vidGenerating) return;
+  $('#vidProg').classList.remove('hidden');
+  $('#vidProgBar').style.width = `${pct}%`;
+  $('#vidStatus').textContent = pct >= 100 ? 'finalizando…' : `gerando vídeo… ${pct}%`;
+});
+
+$('#vidComp').addEventListener('change', syncVidBg);
+$('#vidClose').addEventListener('click', closeVidModal);
+$('#vidScrim').addEventListener('click', closeVidModal);
+$('#vidCancel').addEventListener('click', () => {
+  if (vidItemId) window.broll.cancelVideo({ id: vidItemId });
+  $('#vidStatus').textContent = 'cancelando…';
+});
+$('#vidGenerate').addEventListener('click', async () => {
+  const st = state.items.get(vidItemId);
+  if (!st || vidGenerating) return;
+  vidGenerating = true;
+  $('#vidGenerate').classList.add('hidden');
+  $('#vidCancel').classList.remove('hidden');
+  $('#vidProg').classList.remove('hidden');
+  $('#vidProgBar').style.width = '0%';
+  $('#vidStatus').textContent = 'gerando vídeo… 0%';
+  tlog(`img2vid start id=${vidItemId} comp=${$('#vidComp').value} bg=${$('#vidBg').value} anim=${$('#vidAnim').value} filter=${$('#vidFilter').value}`);
+  const r = await window.broll.generateVideo({
+    item: st.data, query: state.query, filePath: st.filePath,
+    options: {
+      composition: $('#vidComp').value,
+      background: $('#vidBg').value,
+      anim: $('#vidAnim').value,
+      filter: $('#vidFilter').value
+    }
+  });
+  vidGenerating = false;
+  $('#vidGenerate').classList.remove('hidden');
+  $('#vidCancel').classList.add('hidden');
+  if (r && r.filePath) {
+    $('#vidProgBar').style.width = '100%';
+    $('#vidStatus').textContent = `pronto! pasta aberta: ${r.filePath}`;
+    tlog(`img2vid done: ${r.filePath}`);
+  } else {
+    $('#vidStatus').textContent = `falha: ${r?.error || 'erro desconhecido'}`;
+    tlog(`img2vid FALHOU: ${r?.error || 'erro desconhecido'}`);
+  }
 });
 
 refreshConfigUI();

@@ -98,6 +98,57 @@
 </aside>
 <div id="scrim" class="hidden"></div>
 
+<div id="vidModal" class="hidden">
+  <div class="vbox">
+    <div class="dhead">
+      <strong>Gerar vídeo a partir da imagem</strong>
+      <button id="vidClose" class="iconbtn" title="Fechar">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <img id="vidThumb" alt="" />
+    <p id="vidMeta" class="mini"></p>
+    <label>Composição
+      <select id="vidComp">
+        <option value="single">Imagem única (recorte 16:9)</option>
+        <option value="duo">Duplicada (mesma foto maior atrás)</option>
+      </select>
+    </label>
+    <label id="vidBgWrap">Fundo (só na duplicada)
+      <select id="vidBg">
+        <option value="blur-dark">Desfocado + escuro</option>
+        <option value="blur">Só desfocado</option>
+        <option value="dark">Só escuro</option>
+      </select>
+    </label>
+    <div class="row2">
+      <label>Animação
+        <select id="vidAnim">
+          <option value="zoom-in">Zoom aproximando</option>
+          <option value="zoom-out">Zoom afastando</option>
+          <option value="pan-down">Pan de cima p/ baixo</option>
+          <option value="pan-up">Pan de baixo p/ cima</option>
+        </select>
+      </label>
+      <label>Filtro
+        <select id="vidFilter">
+          <option value="none">Nenhum</option>
+          <option value="vhs">VHS</option>
+          <option value="fade">Fade in/out</option>
+        </select>
+      </label>
+    </div>
+    <p class="mini">Sempre 1920×1080 · 5s · sem áudio. O crédito (quando exigido) vai estático no topo do vídeo.</p>
+    <div id="vidProg" class="vprog hidden"><div id="vidProgBar"></div></div>
+    <p id="vidStatus" class="mini"></p>
+    <div class="row">
+      <button id="vidGenerate" class="btn">Gerar vídeo</button>
+      <button id="vidCancel" class="btn ghost hidden">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div id="vidScrim" class="hidden"></div>
+
 <script type="module" src="./app.js"></script>
 </body>
 </html>

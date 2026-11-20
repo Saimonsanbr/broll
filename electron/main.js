@@ -6,6 +6,7 @@ const axios = require('axios');
 const Store = require('electron-store');
 const { getToolsStatus, runBin } = require('./tools');
 const IMG = require('./images');
+const IMG2VID = require('./img2vid');
 
 // upload.wikimedia.org bloqueia requests sem User-Agent (403) —
 // define um UA descritivo global para todos os downloads do app
@@ -452,6 +453,24 @@ ipcMain.handle('search:images', async (_e, { query, pages = { pex: 1, pix: 1, co
   console.log(`[broll] images:done q="${query}" → ${merged.length} itens (${px.length}px/${pb.length}pb/${cm.length}cm) hasMore=${hasMore.pex}/${hasMore.pix}/${hasMore.com}`);
   return { items: merged, errors, hasMore, fetched };
 });
+
+// ---- IPC: imagem → vídeo ----
+// O crédito (quando exigido) é aplicado no vídeo final, estático: a fonte
+// usada é a imagem limpa, re-buscada — nunca a versão já creditada.
+ipcMain.handle('img2vid:generate', async (e, args) => {
+  const id = args?.item?.id;
+  try {
+    const onProgress = (pct) => {
+      try { if (win && !win.isDestroyed()) win.webContents.send('img2vid:progress', { id, pct }); } catch {}
+    };
+    const r = await IMG2VID.generate(app, store, args, onProgress);
+    try { shell.openPath(r.dir); } catch {}
+    return { filePath: r.filePath };
+  } catch (err) {
+    return { error: String((err && err.message) || err) };
+  }
+});
+ipcMain.handle('img2vid:cancel', (_e, { id }) => IMG2VID.cancelGeneration(id));
 
 // ---- IPC: download (fila com pausa leve + progresso) ----
 ipcMain.handle('video:download', (_e, { item, query }) => new Promise((resolve) => {

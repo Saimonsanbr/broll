@@ -377,7 +377,7 @@ imagem original (sem crédito)
 | **3. Backend de imagens** | ✅ código pronto, aguardando UI (Fase 4) | Pexels fotos (web/API), Pixabay, Commons; licenças; paginação | Busca retorna imagens normalizadas e licenças corretas |
 | **4. UI de imagens + crédito** | ✅ código pronto + 1 correção pós-teste, aguardando reteste | Cards, preview, download, cache, `.originals`, sidecar, overlay, drag | Imagem creditada arrasta pro CapCut/Finder; cache clear preserva originais |
 | **5. Modo/filtro** | ✅ código pronto, aguardando teste manual | Botão nos 2 lugares, 3 estados, filtro, empty state, persistência | Matriz de testes do modo passa |
-| **6. Imagem → vídeo** | ⬜ não iniciado | Modal, templates, ffmpeg, progresso, pasta de saída | Cada template gera 1920×1080/5 s e abre a pasta |
+| **6. Imagem → vídeo** | ✅ código pronto, aguardando teste manual | Modal, templates, ffmpeg, progresso, pasta de saída | Cada template gera 1920×1080/5 s e abre a pasta |
 | **7. Polimento** | ⬜ não iniciado | README, versão 0.2.0, build empacotado, validação cross-platform | App buildado testado; documentação atualizada |
 
 ### Fase 0 — Baseline
@@ -476,7 +476,7 @@ Correções previstas:
 
 **Data:** 2026-11-20
 
-**Fase atual:** Fase 5 concluída em código; aguardando teste manual. Fases 1–4 validadas/testadas.
+**Fase atual:** Fase 6 concluída em código (motor validado headless); aguardando teste manual. Fases 1–5 validadas/testadas.
 
 **Concluído:**
 
@@ -497,15 +497,17 @@ Correções previstas:
 - [x] Fase 2: `electron/tools.js` (detecção com fallback PATH/Homebrew/bin embutido/custom), IPC `tools:status`, status e caminhos customizados no drawer, fonte Poppins embutida (`assets/fonts`).
 - [x] Teste manual Fases 1–2 (2026-11-20): buscas “café”, “eu aq”, “car”; 71 e 168 cards via scroll contínuo sem travar; paginação até esgotar (`hasMore=false`); nenhum “pronto” travado; ferramentas detectadas.
 - [x] Fase 3: `electron/images.js` (módulo puro, testado com node) + IPC `search:images` + `preload.searchImages`; paginação independente (pex/pix por página, Commons por `gsroffset`); intercalação das 3 fontes; testes de licença (BY-SA ok com shareAlike, CC0 ok sem atribuição, BY-NC fora, fair use fora, desconhecida fora). Pixabay imagens validada com a chave real (500 hits).
+- [x] Fase 5: botão de modo na home e na topbar (ciclo ambos→imagens→vídeos, animação pop, persistência), busca por modo, filtro sem refetch, empty state intencional com SVG + pesquisa no modo exibido.
+- [x] Fase 6: `electron/img2vid.js` (composição única/duplicada, Ken Burns ×4, filtros nenhum/VHS/fade, crédito estático via overlay PNG, H.264 1920×1080/30fps/5s, progresso, cancelamento, sidecar) + IPC + modal (botão direito) + saída em `Movies/broll-img2vid` com abertura da pasta.
 
 **Não iniciado:**
 
-- [ ] Teste manual da Fase 5 no app (3 modos × busca × filtro × scroll × empty states × persistência).
-- [ ] Fase 6 — imagem → vídeo (modal, templates, ffmpeg, progresso, pasta de saída).
+- [ ] Teste manual da Fase 6 (cada composição × animação × fundo × filtro, crédito no vídeo, pasta abrindo, reprodução no CapCut).
+- [ ] Fase 7 — polimento (README, 0.2.0, build empacotado).
 
-**Próximo passo:** teste manual da Fase 5; depois Fase 6.
+**Próximo passo:** teste manual da Fase 6; depois Fase 7.
 
-**Arquivos alterados nesta etapa:** `src/app.js`, `src/index.html`, `src/style.css`, `electron/main.js`, `PLANO.md`.
+**Arquivos alterados nesta etapa:** `electron/img2vid.js` (novo), `electron/main.js`, `electron/preload.js`, `src/app.js`, `src/index.html`, `src/style.css`, `PLANO.md`.
 
 ---
 
@@ -542,6 +544,11 @@ Correções previstas:
 | 2026-11-20 | Fase 5 (pós-teste) | Vídeos invisíveis em todos os modos: itens de vídeo não tinham `kind`, e o filtro compara `st.data.kind` | `kind: 'video'` nos 3 construtores de vídeo (Pexels API/web, Pixabay) |
 | 2026-11-20 | Fase 5 (pós-teste) | Botão do empty state pesquisava no modo exibido (inútil quando igual ao da busca) | Botão busca o tipo que falta (troca o modo + pesquisa de novo) |
 | 2026-11-20 | Fase 5 (pós-teste 2) | Com `kind` corrigido, display==busca nunca dá mismatch — botão deve pesquisar o modo exibido (incl. “ambos”) | Revertido para o modo exibido: “Pesquisar em ambos/vídeos/imagens” |
+| 2026-11-20 | Fase 6 (spike) | `crop` não tem variável `on` (só `zoompan`); `n` é o nº do frame | Pan usa `n/150`; zoom usa `on/150` |
+| 2026-11-20 | Fase 6 (spike) | Re-fetch do Commons no img2vid também precisa de UA | UA explícito no `fetchCleanSource` |
+| 2026-11-20 | Fase 6 (spike) | VHS com CRF 20 gera ~45MB em 5s (ruído não comprime) | CRF 26 só p/ VHS |
+| 2026-11-20 | Fase 6 (spike) | `format=yuv420p` sozinho mantém `yuvj420p` (full range do JPEG) | `scale=out_range=limited` antes do format; CapCut-safe |
+| 2026-11-20 | Fase 6 (spike) | Falha/cancelamento deixava `.mp4` vazio na pasta | `unlink` da saída em falha/cancelamento |
 
 ---
 
