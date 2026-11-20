@@ -15,5 +15,6 @@ contextBridge.exposeInMainWorld('broll', {
   cacheOpen: () => ipcRenderer.invoke('cache:open'),
   cacheClear: () => ipcRenderer.invoke('cache:clear'),
   getLogs: () => ipcRenderer.invoke('logs:get'),
+  getTools: () => ipcRenderer.invoke('tools:status'),
   openExternal: (url) => shell.openExternal(url)
 });

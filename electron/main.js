@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const Store = require('electron-store');
+const { getToolsStatus, runBin } = require('./tools');
 
 const store = new Store({ name: 'broll-config' });
 
@@ -195,7 +196,9 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 ipcMain.handle('config:get', () => ({
   pexelsKey: store.get('pexelsKey', ''),
   pixabayKey: store.get('pixabayKey', ''),
-  maxQuality: store.get('maxQuality', 1080)
+  maxQuality: store.get('maxQuality', 1080),
+  ffmpegPath: store.get('ffmpegPath', ''),
+  magickPath: store.get('magickPath', '')
 }));
 ipcMain.handle('config:set', (_e, patch) => {
   for (const [k, v] of Object.entries(patch || {})) store.set(k, v);
@@ -477,3 +480,15 @@ ipcMain.handle('cache:clear', () => {
 
 // logs da sessão atual (p/ o botão "Mostrar logs") + caminho do arquivo do dia
 ipcMain.handle('logs:get', () => ({ file: logFile(), lines: [...sessionLogs] }));
+
+// ---- IPC: ferramentas externas (ffmpeg / ImageMagick) ----
+ipcMain.handle('tools:status', async () => {
+  try {
+    return await getToolsStatus({
+      ffmpegPath: store.get('ffmpegPath', ''),
+      magickPath: store.get('magickPath', '')
+    });
+  } catch (err) {
+    return { error: String((err && err.message) || err) };
+  }
+});

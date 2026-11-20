@@ -22,6 +22,8 @@ async function refreshConfigUI() {
   const cfg = await window.broll.getConfig();
   $('#inPexels').value = cfg.pexelsKey || '';
   $('#inPixabay').value = cfg.pixabayKey || '';
+  $('#inFfmpeg').value = cfg.ffmpegPath || '';
+  $('#inMagick').value = cfg.magickPath || '';
   $('#selQuality').value = String(cfg.maxQuality || 1080);
   $('#qualityBadge').textContent = `max ${cfg.maxQuality || 1080}p`;
   const noPixabay = !cfg.pixabayKey;
@@ -29,6 +31,23 @@ async function refreshConfigUI() {
   $('#btnConfig').classList.toggle('attention', noPixabay);
   const info = await window.broll.cacheInfo();
   $('#cacheInfo').textContent = `${info.count} arquivos · ${(info.bytes / 1048576).toFixed(1)} MB · ${info.dir}`;
+  await refreshToolsUI();
+}
+
+async function refreshToolsUI() {
+  const el = $('#toolsInfo');
+  if (!el) return;
+  try {
+    const t = await window.broll.getTools();
+    if (!t || t.error) { el.textContent = 'não foi possível detectar.'; return; }
+    const f = t.ffmpeg, m = t.magick;
+    const lines = [
+      `ffmpeg: ${f.found ? `ok (${f.version || f.path})` : 'não encontrado — instale ou informe o caminho'}`,
+      `magick: ${m.found ? `ok (${m.version || m.path})` : 'não encontrado — instale ou informe o caminho'}`,
+      t.videoCreditOk ? 'crédito em vídeo: pronto (overlay, sem drawtext)' : 'crédito em vídeo: indisponível (falta ffmpeg ou magick)'
+    ];
+    el.textContent = lines.join('\n');
+  } catch { el.textContent = 'não foi possível detectar.'; }
 }
 
 function openDrawer() { $('#drawer').classList.remove('hidden'); $('#scrim').classList.remove('hidden'); }
@@ -265,10 +284,16 @@ $('#btnSave').addEventListener('click', async () => {
   await window.broll.setConfig({
     pexelsKey: $('#inPexels').value.trim(),
     pixabayKey: $('#inPixabay').value.trim(),
+    ffmpegPath: $('#inFfmpeg').value.trim(),
+    magickPath: $('#inMagick').value.trim(),
     maxQuality: Number($('#selQuality').value)
   });
   $('#logs').textContent += '\nConfig salva.';
   await refreshConfigUI();
+});
+$('#btnTools').addEventListener('click', async () => {
+  $('#toolsInfo').textContent = 'verificando…';
+  await refreshToolsUI();
 });
 $('#selQuality').addEventListener('change', async (e) => {
   await window.broll.setConfig({ maxQuality: Number(e.target.value) });

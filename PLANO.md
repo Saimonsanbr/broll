@@ -373,7 +373,7 @@ imagem original (sem crédito)
 |---|---|---|---|
 | **0. Baseline** | ✅ concluído | Branch `feat/images-img2vid`; reproduzir os 2 bugs com logs; checklist de teste | Bugs reproduzidos e causa confirmada; nenhuma mudança de comportamento ainda |
 | **1. Bugs** | ✅ código pronto, aguardando teste manual | Correção do “pronto” travado + scroll do Mac | Stress test passa; arrasto confiável; scroll estável |
-| **2. Ferramentas** | ⬜ não iniciado | Spike de binários; `tools.js`; status nas configurações | Crédito e vídeo funcionam sem Homebrew (se o bundle for viável) |
+| **2. Ferramentas** | ✅ código pronto, aguardando teste manual | Spike de binários; `tools.js`; status nas configurações | Crédito e vídeo funcionam sem Homebrew (se o bundle for viável) |
 | **3. Backend de imagens** | ⬜ não iniciado | Pexels fotos (web/API), Pixabay, Commons; licenças; paginação | Busca retorna imagens normalizadas e licenças corretas |
 | **4. UI de imagens + crédito** | ⬜ não iniciado | Cards, preview, download, cache, `.originals`, sidecar, overlay, drag | Imagem creditada arrasta pro CapCut/Finder; cache clear preserva originais |
 | **5. Modo/filtro** | ⬜ não iniciado | Botão nos 2 lugares, 3 estados, filtro, empty state, persistência | Matriz de testes do modo passa |
@@ -493,12 +493,13 @@ Correções previstas:
 - [x] Fase 1: endurecer drag (`draggable=false` + CSS, remoção do badge `.stat`).
 - [x] Fase 1: aliviar scroll (liberar `src`/`load()` no `mouseleave`, liberar vídeos na nova busca e no limpar cache, throttle de progresso no main, prefetch de thumb só no hover e em cards prontos).
 - [x] `vite build` passando.
+- [x] Fase 2: spike prova que ffmpeg Homebrew não tem `drawtext`; pipeline validado sem ele (magick annotate + zoompan + overlay de PNG).
+- [x] Fase 2: `electron/tools.js` (detecção com fallback PATH/Homebrew/bin embutido/custom), IPC `tools:status`, status e caminhos customizados no drawer, fonte Poppins embutida (`assets/fonts`).
 
 **Não iniciado:**
 
-- [ ] Teste manual da Fase 1 no app (`npm run dev:electron` ou build).
-- [ ] Fase 2 — spike de binários e `electron/tools.js`.
-- [ ] Fases 3–7.
+- [ ] Teste manual das Fases 1–2 no app (`npm run dev:electron` ou build).
+- [ ] Fase 3 — backend de imagens (Pexels fotos, Pixabay, Commons).
 
 **Próximo passo:** usuário testa a Fase 1 (buscar, hover em vários cards, baixar, arrastar, rolar bastante); depois partimos para a Fase 2.
 
@@ -530,6 +531,8 @@ Correções previstas:
 | 2026-11-19 | Planejamento | Embutir binários resolve o atrito de instalação, mas traz tamanho e licenças | Spike com ffmpeg estático + `drawtext`; decidir com dados |
 | 2026-11-20 | Fase 1 | `prefetchThumb` disparado para cada resultado da busca gerava N requisições por página | Prefetch só no hover e em cards já em cache; reduz tráfego e ajuda o scroll |
 | 2026-11-20 | Fase 1 | Download direto no nome final permitia `local-path` ver arquivo incompleto | Gravar em `.part` e renomear só no `finish`; `local-path` exige size > 0 |
+| 2026-11-20 | Fase 2 (spike) | ffmpeg do Homebrew não tem `drawtext` (sem freetype) — crédito via `drawtext` falharia | Crédito via overlay de PNG com filtro `overlay` (sempre disponível); texto renderizado com magick/canvas + Poppins |
+| 2026-11-20 | Fase 2 (spike) | App aberto pelo Finder não herda o PATH do shell | `tools.js` procura em bin embutido + `/opt/homebrew/bin` + `/usr/local/bin` + PATH + caminho customizado |
 
 ---
 
