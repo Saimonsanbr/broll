@@ -72,6 +72,37 @@ A chave do **Pixabay** é grátis (pegue em [pixabay.com/api/docs](https://pixab
 
 Pra gerar vídeos a partir de imagem, o app usa o **ffmpeg** do sistema (e o **ImageMagick** só quando a imagem exige crédito). Nas configurações dá pra ver se foram detectados e informar caminhos customizados.
 
+## Ferramentas externas (ffmpeg e ImageMagick)
+
+Na 0.2.0 esses programas **não vão embutidos** no app (bundle previsto pras próximas versões) — precisam estar instalados no sistema:
+
+- **Sem eles:** vídeos e imagens Pexels/Pixabay e Commons sem atribuição baixam normalmente.
+- **Sem ffmpeg:** o “Gerar vídeo” falha pedindo a instalação.
+- **Sem ImageMagick:** imagem do Commons que exige crédito tem o download **bloqueado** com aviso (de propósito, pra não violar a licença).
+
+### Windows (recomendado: winget)
+
+```powershell
+winget install Gyan.FFmpeg
+winget install ImageMagick.ImageMagick
+```
+
+Feche e reabra o app. Se ele não achar sozinho, cole os caminhos nos campos da engrenagem → “Detectar novamente” (geralmente `C:\Program Files\ffmpeg\bin\ffmpeg.exe` e `C:\Program Files\ImageMagick-7.x\magick.exe`).
+
+Sem winget: baixe o [ffmpeg essentials](https://www.gyan.dev/ffmpeg/builds/) (só descompactar) e o [instalador do ImageMagick](https://imagemagick.org/script/download.php) (marque “Add to PATH”).
+
+### macOS
+
+```bash
+brew install ffmpeg imagemagick
+```
+
+### Linux (Debian/Ubuntu)
+
+```bash
+sudo apt install ffmpeg imagemagick
+```
+
 ## Posso usar no YouTube? (segurança de licença)
 
 Resposta curta: **sim, pode.**
