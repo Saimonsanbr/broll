@@ -135,11 +135,14 @@ function applyModeFilter() {
   if (mismatch) {
     $('#empty').classList.add('hidden');
     const onlyImages = state.searchMode === 'images';
+    const wantLabel = MODE_LABEL[state.mode] || MODE_LABEL.both;
     $('#emptyModeText').textContent = onlyImages
       ? `Esta busca só tem imagens. Pesquise novamente para encontrar vídeos.`
       : `Esta busca só tem vídeos. Pesquise novamente para encontrar imagens.`;
-    // o botão busca o tipo que falta (não o modo exibido, que seria inútil)
-    $('#emptyModeBtn').textContent = onlyImages ? `Buscar vídeos` : `Buscar imagens`;
+    // o botão pesquisa no modo exibido (que a busca atual não contém)
+    $('#emptyModeBtn').textContent = state.mode === 'both'
+      ? `Pesquisar em “ambos”`
+      : `Pesquisar ${wantLabel}`;
   }
   updateTail(false);
 }
@@ -436,11 +439,9 @@ $('#btnConfig').addEventListener('click', openDrawer);
 $('#btnClose').addEventListener('click', closeDrawer);
 $('#modeHome').addEventListener('click', cycleMode);
 $('#modeTop').addEventListener('click', cycleMode);
-$('#emptyModeBtn').addEventListener('click', async () => {
-  // troca para o tipo que falta na busca atual e pesquisa de novo
-  const missing = state.searchMode === 'images' ? 'videos' : 'images';
-  tlog(`emptyMode: buscando o tipo que falta ("${missing}")`);
-  await setMode(missing);
+$('#emptyModeBtn').addEventListener('click', () => {
+  // pesquisa de novo no modo exibido (que a busca atual não contém)
+  tlog(`emptyMode: pesquisando de novo em "${state.mode}"`);
   runSearch(true);
 });
 $('#scrim').addEventListener('click', closeDrawer);

@@ -541,6 +541,7 @@ Correções previstas:
 | 2026-11-20 | Fase 4 (pós-teste) | Faixa de crédito ponta a ponta destoava da imagem | Caixa justa no texto (`caption` + `-trim` + `-border 26x14`), centralizada no topo |
 | 2026-11-20 | Fase 5 (pós-teste) | Vídeos invisíveis em todos os modos: itens de vídeo não tinham `kind`, e o filtro compara `st.data.kind` | `kind: 'video'` nos 3 construtores de vídeo (Pexels API/web, Pixabay) |
 | 2026-11-20 | Fase 5 (pós-teste) | Botão do empty state pesquisava no modo exibido (inútil quando igual ao da busca) | Botão busca o tipo que falta (troca o modo + pesquisa de novo) |
+| 2026-11-20 | Fase 5 (pós-teste 2) | Com `kind` corrigido, display==busca nunca dá mismatch — botão deve pesquisar o modo exibido (incl. “ambos”) | Revertido para o modo exibido: “Pesquisar em ambos/vídeos/imagens” |
 
 ---
 
