@@ -548,18 +548,25 @@ async function applyCreditOverlay(magickBin, inputPath, outputPath, text, width)
   const os = require('os');
   const safe = String(text || '').replace(/"/g, "'").slice(0, 220);
   const ps = Math.min(44, Math.max(20, Math.round(width / 42)));
-  const stripW = Math.max(320, width - 120);
+  // caixa justa no texto, com respiro nas laterais (não mais faixa ponta a ponta)
+  const maxW = Math.min(width - 80, Math.max(280, Math.round(width * 0.7)));
   const font = poppinsPath();
-  const strip = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'broll-credit-')), 'strip.png');
-  const capArgs = ['-background', '#00000090', '-fill', 'rgba(255,255,255,0.75)',
-    ...(font ? ['-font', font] : []),
-    '-pointsize', String(ps), '-size', `${stripW}x`, '-gravity', 'center',
-    `caption:${safe}`, strip];
-  const r1 = await runBin(magickBin, capArgs, 30000);
-  if (!r1.ok) throw new Error(`magick caption: ${r1.error}`);
-  const r2 = await runBin(magickBin, [inputPath, strip, '-gravity', 'north', '-geometry', '+0+18', '-composite', outputPath], 60000);
-  try { fs.unlinkSync(strip); } catch {}
-  if (!r2.ok) throw new Error(`magick composite: ${r2.error}`);
+  const tmpd = fs.mkdtempSync(path.join(os.tmpdir(), 'broll-credit-'));
+  const raw = path.join(tmpd, 'raw.png');
+  const strip = path.join(tmpd, 'strip.png');
+  try {
+    const r1 = await runBin(magickBin, ['-background', 'none', '-fill', 'rgba(255,255,255,0.8)',
+      ...(font ? ['-font', font] : []),
+      '-pointsize', String(ps), '-size', `${maxW}x`, '-gravity', 'center',
+      `caption:${safe}`, raw], 30000);
+    if (!r1.ok) throw new Error(`magick caption: ${r1.error}`);
+    const r2 = await runBin(magickBin, [raw, '-trim', '+repage', '-bordercolor', '#00000080', '-border', '26x14', strip], 30000);
+    if (!r2.ok) throw new Error(`magick box: ${r2.error}`);
+    const r3 = await runBin(magickBin, [inputPath, strip, '-gravity', 'north', '-geometry', '+0+24', '-composite', outputPath], 60000);
+    if (!r3.ok) throw new Error(`magick composite: ${r3.error}`);
+  } finally {
+    try { fs.rmSync(tmpd, { recursive: true, force: true }); } catch {}
+  }
 }
 
 ipcMain.handle('image:download', (_e, { item, query }) => new Promise((resolve) => {

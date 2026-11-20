@@ -277,11 +277,18 @@ function markReady(id, filePath) {
   card.classList.add('ready'); card.setAttribute('draggable', 'true');
   const prog = card.querySelector('.prog');
   if (prog) { prog.classList.add('hidden'); prog.textContent = ''; }
-  // depois de pronto, o preview passa a ser o arquivo local
+  // depois de pronto, o preview passa a ser o arquivo local (vídeo)
+  // ou continua no thumb remoto (imagem — file:// é bloqueado na página
+  // http do dev e não traz benefício visual; o arquivo local serve p/ arrastar)
   const media = card.querySelector('video, img');
   if (media) {
-    if (media.tagName === 'VIDEO') { try { media.pause(); } catch {} }
-    media.src = `file://${filePath}`;
+    if (media.tagName === 'VIDEO') {
+      try { media.pause(); } catch {}
+      media.src = `file://${filePath}`;
+    } else {
+      try { delete media.dataset.thumb; } catch {}
+      if (st.data.thumb) media.src = st.data.thumb;
+    }
   }
 }
 

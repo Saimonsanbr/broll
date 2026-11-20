@@ -375,7 +375,7 @@ imagem original (sem crédito)
 | **1. Bugs** | ✅ código pronto, aguardando teste manual | Correção do “pronto” travado + scroll do Mac | Stress test passa; arrasto confiável; scroll estável |
 | **2. Ferramentas** | ✅ código pronto, aguardando teste manual | Spike de binários; `tools.js`; status nas configurações | Crédito e vídeo funcionam sem Homebrew (se o bundle for viável) |
 | **3. Backend de imagens** | ✅ código pronto, aguardando UI (Fase 4) | Pexels fotos (web/API), Pixabay, Commons; licenças; paginação | Busca retorna imagens normalizadas e licenças corretas |
-| **4. UI de imagens + crédito** | ✅ código pronto, aguardando teste manual | Cards, preview, download, cache, `.originals`, sidecar, overlay, drag | Imagem creditada arrasta pro CapCut/Finder; cache clear preserva originais |
+| **4. UI de imagens + crédito** | ✅ código pronto + 1 correção pós-teste, aguardando reteste | Cards, preview, download, cache, `.originals`, sidecar, overlay, drag | Imagem creditada arrasta pro CapCut/Finder; cache clear preserva originais |
 | **5. Modo/filtro** | ⬜ não iniciado | Botão nos 2 lugares, 3 estados, filtro, empty state, persistência | Matriz de testes do modo passa |
 | **6. Imagem → vídeo** | ⬜ não iniciado | Modal, templates, ffmpeg, progresso, pasta de saída | Cada template gera 1920×1080/5 s e abre a pasta |
 | **7. Polimento** | ⬜ não iniciado | README, versão 0.2.0, build empacotado, validação cross-platform | App buildado testado; documentação atualizada |
@@ -537,6 +537,8 @@ Correções previstas:
 | 2026-11-20 | Fase 2 (spike) | App aberto pelo Finder não herda o PATH do shell | `tools.js` procura em bin embutido + `/opt/homebrew/bin` + `/usr/local/bin` + PATH + caminho customizado |
 | 2026-11-20 | Fase 4 | `upload.wikimedia.org` retorna 403 “robot policy” sem User-Agent — download do Commons falharia no app | UA descritivo global no axios (`main.js` + `images.js`); validado download + crédito numa foto real (CC BY-SA 2.0) |
 | 2026-11-20 | Fase 4 | Cards de vídeo e imagem no mesmo grid precisam de diferenciação imediata | Ícone SVG de tipo no topo-esquerdo (play/foto), aspecto 4:3 p/ imagem, badge textual de licença só no Commons |
+| 2026-11-20 | Fase 4 (pós-teste) | Thumb preta após baixar imagem: `markReady` trocava `<img>` para `file://`, bloqueado na página http do dev; com download rápido o hover restaurava o thumb (parecia “recuperar”), com Commons lento ficava preto | Imagem pronta mantém o thumb remoto (já em cache); arquivo local serve só p/ arrastar |
+| 2026-11-20 | Fase 4 (pós-teste) | Faixa de crédito ponta a ponta destoava da imagem | Caixa justa no texto (`caption` + `-trim` + `-border 26x14`), centralizada no topo |
 
 ---
 
