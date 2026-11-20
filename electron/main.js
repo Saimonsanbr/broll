@@ -7,6 +7,10 @@ const Store = require('electron-store');
 const { getToolsStatus, runBin } = require('./tools');
 const IMG = require('./images');
 
+// upload.wikimedia.org bloqueia requests sem User-Agent (403) —
+// define um UA descritivo global para todos os downloads do app
+axios.defaults.headers.common['User-Agent'] = 'broll/0.2 (https://github.com/Saimonsanbr/broll)';
+
 const store = new Store({ name: 'broll-config' });
 
 // ---- logs persistentes: arquivo por dia + buffer da sessão (nada na interface) ----
@@ -508,6 +512,141 @@ ipcMain.handle('video:local-path', (_e, { item, query }) => {
   } catch { return null; }
 });
 
+// ---- IPC: imagens — download com crédito quando exigido ----
+// Pexels/Pixabay: baixa direto, sem overlay (licença livre, sem atribuição).
+// Commons com atribuição: baixa, guarda cópia leve em .originals/ + sidecar
+// .txt, aplica o crédito com ImageMagick e entrega o arquivo -credit.
+function imageExtFor(item) {
+  try {
+    const u = new URL(item.downloadUrl || '');
+    const m = /\.(jpe?g|png|webp)$/i.exec(u.pathname);
+    if (m) return m[1].toLowerCase().replace('jpeg', 'jpg');
+  } catch {}
+  return 'jpg';
+}
+
+function originalsDir() {
+  const dir = path.join(ensureCache(), '.originals');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function imageTargetFor(item, query) {
+  const dir = ensureCache();
+  const ext = imageExtFor(item);
+  const base = `${sanitize(query)}-${sanitize(item.id)}-${item.width}x${item.height}`;
+  const plain = path.join(dir, `${base}.${ext}`);
+  if (item.license && item.license.attributionRequired) {
+    return { plain, final: path.join(dir, `${base}-credit.${ext}`), ext };
+  }
+  return { plain, final: plain, ext };
+}
+
+async function applyCreditOverlay(magickBin, inputPath, outputPath, text, width) {
+  const { runBin } = require('./tools');
+  const { poppinsPath } = require('./tools');
+  const os = require('os');
+  const safe = String(text || '').replace(/"/g, "'").slice(0, 220);
+  const ps = Math.min(44, Math.max(20, Math.round(width / 42)));
+  const stripW = Math.max(320, width - 120);
+  const font = poppinsPath();
+  const strip = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'broll-credit-')), 'strip.png');
+  const capArgs = ['-background', '#00000090', '-fill', 'rgba(255,255,255,0.75)',
+    ...(font ? ['-font', font] : []),
+    '-pointsize', String(ps), '-size', `${stripW}x`, '-gravity', 'center',
+    `caption:${safe}`, strip];
+  const r1 = await runBin(magickBin, capArgs, 30000);
+  if (!r1.ok) throw new Error(`magick caption: ${r1.error}`);
+  const r2 = await runBin(magickBin, [inputPath, strip, '-gravity', 'north', '-geometry', '+0+18', '-composite', outputPath], 60000);
+  try { fs.unlinkSync(strip); } catch {}
+  if (!r2.ok) throw new Error(`magick composite: ${r2.error}`);
+}
+
+ipcMain.handle('image:download', (_e, { item, query }) => new Promise((resolve) => {
+  downloadQueue = downloadQueue.then(async () => {
+    await new Promise(r => setTimeout(r, DOWNLOAD_GAP_MS * 0.4));
+    const { plain, final } = imageTargetFor(item, query);
+
+    let lastPct = -1, lastSentAt = 0;
+    const sendProgress = (pct) => {
+      if (!win || win.isDestroyed()) return;
+      const now = Date.now();
+      const done = pct >= 100;
+      if (done ? lastPct < 100 : (pct !== lastPct && now - lastSentAt >= 100)) {
+        lastPct = pct; lastSentAt = now;
+        win.webContents.send('video:progress', { id: item.id, pct });
+      }
+    };
+
+    try {
+      if (fs.existsSync(final) && fs.statSync(final).size > 0) {
+        sendProgress(100);
+        resolve({ filePath: final }); return;
+      }
+      let url = item.downloadUrl;
+      if (item.source === 'wikimedia') {
+        url = await IMG.getCommonsFileUrl(item.fileTitle, item.downloadWidth || 2560);
+        if (!url) throw new Error('não foi possível resolver a URL do arquivo no Commons');
+      }
+      if (!url) throw new Error('URL de download ausente');
+      const partPath = `${plain}.part`;
+      const res = await axios.get(url, { responseType: 'stream', timeout: 60000 });
+      const total = Number(res.headers['content-length'] || 0);
+      await new Promise((res2, rej) => {
+        const w = fs.createWriteStream(partPath);
+        let done = 0;
+        res.data.on('data', (c) => {
+          done += c.length;
+          if (total) sendProgress(Math.round(done / total * 100));
+        });
+        res.data.pipe(w);
+        res.data.on('error', rej);
+        w.on('error', rej);
+        w.on('finish', () => {
+          try { fs.renameSync(partPath, plain); res2(); } catch (e) { rej(e); }
+        });
+      });
+
+      if (item.license && item.license.attributionRequired) {
+        const { resolveMagick } = require('./tools');
+        const magickBin = resolveMagick(store.get('magickPath', ''));
+        if (!magickBin) throw new Error('ImageMagick não encontrado — instale ou informe o caminho nas Configurações. Download bloqueado para não violar a licença.');
+        // cópia leve de segurança + sidecar (preservados no "limpar cache")
+        const odir = originalsDir();
+        const { runBin } = require('./tools');
+        const origCopy = path.join(odir, `${sanitize(item.id)}.jpg`);
+        const sidecar = path.join(odir, `${sanitize(item.id)}.license.txt`);
+        await runBin(magickBin, [plain, '-resize', '1600x1600>', '-quality', '82', origCopy], 60000);
+        const lic = item.license || {};
+        fs.writeFileSync(sidecar,
+          `broll — arquivo de licença/segurança (não apagar)\n` +
+          `arquivo: ${item.fileTitle || item.id}\n` +
+          `autor: ${item.author || ''}\n` +
+          `página: ${item.pageUrl || ''}\n` +
+          `licença: ${lic.shortName || ''}\n` +
+          `url da licença: ${lic.url || ''}\n` +
+          `share-alike (obra derivada sob a mesma licença): ${lic.shareAlike ? 'sim' : 'não'}\n` +
+          `crédito aplicado: ${item.attribution ? item.attribution.text : ''}\n` +
+          `baixado em: ${new Date().toISOString()}\n`);
+        await applyCreditOverlay(magickBin, plain, final, item.attribution.text, item.width);
+        try { fs.unlinkSync(plain); } catch {}
+      }
+      sendProgress(100);
+      resolve({ filePath: final });
+    } catch (err) {
+      try { fs.unlinkSync(`${plain}.part`); } catch {}
+      resolve({ error: String((err && err.message) || err) });
+    }
+  });
+}));
+
+ipcMain.handle('image:local-path', (_e, { item, query }) => {
+  try {
+    const { final } = imageTargetFor(item, query);
+    return fs.existsSync(final) && fs.statSync(final).size > 0 ? final : null;
+  } catch { return null; }
+});
+
 // ---- drag nativo: renderer faz send('drag:start', {filePath, id}) no ondragstart ----
 const DRAG_ICON = path.join(__dirname, '..', 'assets', 'drag-icon.png');
 function thumbsDir() {
@@ -563,12 +702,14 @@ ipcMain.handle('cache:info', () => {
       try { const st = fs.statSync(path.join(dir, f)); if (st.isFile()) { bytes += st.size; count++; } } catch {}
     }
   } catch {}
-  return { dir, bytes, count };
+  return { dir, bytes, count, originalsDir: path.join(dir, '.originals') };
 });
 ipcMain.handle('cache:open', () => { shell.openPath(ensureCache()); return true; });
+ipcMain.handle('cache:open-originals', () => { shell.openPath(originalsDir()); return true; });
 ipcMain.handle('cache:clear', () => {
   const dir = ensureCache();
-  try { for (const f of fs.readdirSync(dir)) { try { fs.rmSync(path.join(dir, f), { recursive: true, force: true }); } catch {} } } catch {}
+  // .originals (cópias de segurança + licenças) é preservado de propósito
+  try { for (const f of fs.readdirSync(dir)) { if (f === '.originals') continue; try { fs.rmSync(path.join(dir, f), { recursive: true, force: true }); } catch {} } } catch {}
   return true;
 });
 

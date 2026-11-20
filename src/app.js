@@ -12,8 +12,10 @@ function releasePreview(video) {
 }
 
 const state = {
-  query: '', pagePex: 1, pagePix: 1, perPage: 12, loading: false,
-  hasMore: { pex: true, pix: true },
+  query: '', perPage: 12, loading: false,
+  vpex: 1, vpix: 1, ipex: 1, ipix: 1, icom: 1,
+  hasMoreV: { pex: true, pix: true },
+  hasMoreI: { pex: true, pix: true, com: true },
   items: new Map(), // id -> {data, status: 'remote'|'downloading'|'ready', filePath, pct}
 };
 let epoch = 0; // invalida buscas antigas quando uma nova pesquisa começa
@@ -31,6 +33,7 @@ async function refreshConfigUI() {
   $('#btnConfig').classList.toggle('attention', noPixabay);
   const info = await window.broll.cacheInfo();
   $('#cacheInfo').textContent = `${info.count} arquivos · ${(info.bytes / 1048576).toFixed(1)} MB · ${info.dir}`;
+  $('#originalsInfo').textContent = `originais de segurança: ${info.originalsDir || ''} (preservados no limpar cache)`;
   await refreshToolsUI();
 }
 
@@ -79,7 +82,8 @@ function noticeAppend(msgs) {
 function updateTail(showLoader) {
   const el = $('#loadingMore');
   if (!el) return;
-  const finished = !state.hasMore.pex && !state.hasMore.pix && state.items.size > 0;
+  const mV = state.hasMoreV, mI = state.hasMoreI;
+  const finished = !mV.pex && !mV.pix && !mI.pex && !mI.pix && !mI.com && state.items.size > 0;
   if (showLoader) {
     el.classList.remove('hidden'); el.classList.remove('done');
     el.innerHTML = '<span class="spin"></span>carregando mais resultados…';
@@ -91,29 +95,66 @@ function updateTail(showLoader) {
   }
 }
 
+// ícone de tipo: só UI, nunca vai para o arquivo exportado
+function kindIcon(kind) {
+  if (kind === 'image') {
+    return '<svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9.5" cy="10.5" r="1.5" fill="currentColor"/><path d="M5 17l4.5-4.5 3.5 3.5 3-3L20 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+  }
+  return '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10.5 9.5l5 2.5-5 2.5z" fill="currentColor"/></svg>';
+}
+
 function cardEl(item) {
+  const isImg = item.kind === 'image';
   const card = document.createElement('div');
-  card.className = 'card'; card.dataset.id = item.id;
+  card.className = 'card' + (isImg ? ' image' : ''); card.dataset.id = item.id;
+  const badge = (item.source === 'wikimedia' && item.license)
+    ? `<span class="lic" title="Licença: ${item.license.shortName || ''}">${item.license.shortName || ''}</span>` : '';
+  const corner = isImg
+    ? `<span class="dur">${item.width}×${item.height}</span>`
+    : `<span class="dur">${item.duration ? item.duration + 's' : ''} · ${item.q || item.height}p</span>`;
   card.innerHTML = `
-    <video muted loop playsinline preload="none" draggable="false" poster="${item.thumb || ''}"></video>
-    <span class="dur">${item.duration ? item.duration + 's' : ''} · ${item.q || item.height}p</span>
+    <span class="kind" title="${isImg ? 'imagem' : 'vídeo'}">${kindIcon(item.kind)}</span>
+    ${isImg
+      ? `<img draggable="false" loading="lazy" src="${item.thumb || ''}" alt="" />`
+      : `<video muted loop playsinline preload="none" draggable="false" poster="${item.thumb || ''}"></video>`}
+    ${corner}
+    ${badge}
     <div class="prog hidden">0%</div>
     <div class="meta"><span class="src">${item.source}</span><span class="au" title="${item.author}">${item.author}</span></div>`;
-  const video = card.querySelector('video');
-  // o <video> é draggable por padrão no Chromium e pode roubar o drag do card
-  video.draggable = false;
+  const media = card.querySelector(isImg ? 'img' : 'video');
   let thumbAsked = false;
+  if (isImg) {
+    // hover = preview maior; pronto = arquivo local (sem swap)
+    let swapped = false;
+    card.addEventListener('mouseenter', () => {
+      if (!thumbAsked) { thumbAsked = true; window.broll.prefetchThumb({ id: item.id, thumbUrl: item.thumb }); }
+      const st = state.items.get(item.id);
+      if (st && st.status === 'ready') return;
+      if (!swapped && item.previewUrl && media.src !== item.previewUrl) {
+        media.dataset.thumb = media.src;
+        media.src = item.previewUrl;
+        swapped = true;
+      }
+    });
+    card.addEventListener('mouseleave', () => {
+      if (swapped && media.dataset.thumb) { media.src = media.dataset.thumb; swapped = false; }
+    });
+  } else {
+    const video = media;
+    // o <video> é draggable por padrão no Chromium e pode roubar o drag do card
+    video.draggable = false;
 
-  // hover = stream remoto, sem baixar
-  card.addEventListener('mouseenter', () => {
-    // baixa a thumb só do card que o mouse tocou (fantasma do arrasto),
-    // em vez de disparar uma requisição para cada resultado da busca
-    if (!thumbAsked) { thumbAsked = true; window.broll.prefetchThumb({ id: item.id, thumbUrl: item.thumb }); }
-    if (!video.src) video.src = item.previewUrl;
-    video.play().catch(() => {});
-  });
-  // ao sair, libera a mídia; sem isso os players se acumulam e o renderer engasga
-  card.addEventListener('mouseleave', () => releasePreview(video));
+    // hover = stream remoto, sem baixar
+    card.addEventListener('mouseenter', () => {
+      // baixa a thumb só do card que o mouse tocou (fantasma do arrasto),
+      // em vez de disparar uma requisição para cada resultado da busca
+      if (!thumbAsked) { thumbAsked = true; window.broll.prefetchThumb({ id: item.id, thumbUrl: item.thumb }); }
+      if (!video.src) video.src = item.previewUrl;
+      video.play().catch(() => {});
+    });
+    // ao sair, libera a mídia; sem isso os players se acumulam e o renderer engasga
+    card.addEventListener('mouseleave', () => releasePreview(video));
+  }
 
   // 1 clique = baixa (com overlay %)
   card.addEventListener('click', async (e) => {
@@ -152,40 +193,61 @@ async function runSearch(reset) {
   const q = state.query.trim();
   if (!q) return;
   if (reset) {
-    state.pagePex = 1; state.pagePix = 1;
-    state.hasMore = { pex: true, pix: true };
+    state.vpex = 1; state.vpix = 1;
+    state.ipex = 1; state.ipix = 1; state.icom = 1;
+    state.hasMoreV = { pex: true, pix: true };
+    state.hasMoreI = { pex: true, pix: true, com: true };
     state.items.clear();
     $('#grid').querySelectorAll('video').forEach(releasePreview);
     $('#grid').innerHTML = ''; $('#empty').classList.add('hidden');
   }
-  if (!state.hasMore.pex && !state.hasMore.pix) { tlog(`search skip reset=${reset}: fontes esgotadas`); return; }
+  const mV = state.hasMoreV, mI = state.hasMoreI;
+  const wantV = mV.pex || mV.pix, wantI = mI.pex || mI.pix || mI.com;
+  if (!wantV && !wantI) { tlog(`search skip reset=${reset}: fontes esgotadas`); return; }
   if (!reset && state.loading) { tlog('search skip: já carregando'); return; }
   const my = ++epoch; // toda chamada aceita vira dona; a anterior vira obsoleta sem travar o loading
   state.loading = true;
-  tlog(`search start reset=${reset} pex:${state.hasMore.pex ? state.pagePex : 0} pix:${state.hasMore.pix ? state.pagePix : 0}`);
+  tlog(`search start reset=${reset} vpex:${mV.pex ? state.vpex : 0} vpix:${mV.pix ? state.vpix : 0} ipex:${mI.pex ? state.ipex : 0} ipix:${mI.pix ? state.ipix : 0} icom:${mI.com ? state.icom : 0}`);
   try {
     updateTail(!reset);
-    const pages = { pex: state.hasMore.pex ? state.pagePex : 0, pix: state.hasMore.pix ? state.pagePix : 0 };
-    const { items, errors, hasMore, fetched, pexelsMode, hasPixabay } = await window.broll.search({ query: q, pages, perPage: state.perPage });
+    const pagesV = { pex: mV.pex ? state.vpex : 0, pix: mV.pix ? state.vpix : 0 };
+    const pagesI = { pex: mI.pex ? state.ipex : 0, pix: mI.pix ? state.ipix : 0, com: mI.com ? state.icom : 0 };
+    const [rv, ri] = await Promise.all([
+      wantV ? window.broll.search({ query: q, pages: pagesV, perPage: state.perPage })
+            : { items: [], errors: [], hasMore: { pex: false, pix: false }, fetched: { pex: false, pix: false }, pexelsMode: 'web', hasPixabay: false },
+      wantI ? window.broll.searchImages({ query: q, pages: pagesI, perPage: state.perPage })
+            : { items: [], errors: [], hasMore: { pex: false, pix: false, com: false }, fetched: { pex: false, pix: false, com: false } }
+    ]);
     if (my !== epoch) { tlog('search descartada (obsoleta)'); return; } // pesquisa antiga: descarta
+    const errors = [...(rv.errors || []), ...(ri.errors || [])];
     if (reset) {
       notice(errors);
-      $('#credit').innerHTML = `Fontes: <span>Pexels (${pexelsMode === 'api' ? 'API oficial' : 'web sem chave'})</span>${hasPixabay ? ' · <span>Pixabay (API)</span>' : ''} — crédito ao autor em cada card.`;
+      $('#credit').innerHTML = `Fontes: <span>Pexels (${rv.pexelsMode === 'api' ? 'API oficial' : 'web sem chave'})</span>${rv.hasPixabay ? ' · <span>Pixabay (API)</span>' : ''} · <span>Wikimedia Commons</span> — crédito ao autor em cada card.`;
     } else if (errors.length) noticeAppend(errors);
-    if (reset && !items.length) $('#empty').classList.remove('hidden');
-    state.hasMore = hasMore;
-    items.forEach((it, i) => renderItem(it, i));
+    // intercala vídeos e imagens no grid
+    const vids = rv.items || [], imgs = ri.items || [];
+    const all = [];
+    const n = Math.max(vids.length, imgs.length);
+    for (let i = 0; i < n; i++) { if (vids[i]) all.push(vids[i]); if (imgs[i]) all.push(imgs[i]); }
+    if (reset && !all.length) $('#empty').classList.remove('hidden');
+    state.hasMoreV = rv.hasMore; state.hasMoreI = ri.hasMore;
+    all.forEach((it, i) => renderItem(it, i));
     // marca os já em cache como prontos (sem re-baixar) + thumb local p/ o fantasma do arrasto
-    for (const it of items) {
-      const p = await window.broll.localPath({ item: it, query: q });
+    for (const it of all) {
+      const p = it.kind === 'image'
+        ? await window.broll.imageLocalPath({ item: it, query: q })
+        : await window.broll.localPath({ item: it, query: q });
       if (p) {
         markReady(it.id, p);
         window.broll.prefetchThumb({ id: it.id, thumbUrl: it.thumb });
       }
     }
-    if (fetched.pex && state.hasMore.pex) state.pagePex += 1;
-    if (fetched.pix && state.hasMore.pix) state.pagePix += 1;
-    tlog(`search done: +${items.length} novos, ${state.items.size} cards, prox pex:${state.pagePex}/pix:${state.pagePix} hasMore=${state.hasMore.pex}/${state.hasMore.pix} docH=${document.documentElement.scrollHeight} winH=${window.innerHeight}`);
+    if (rv.fetched.pex && state.hasMoreV.pex) state.vpex += 1;
+    if (rv.fetched.pix && state.hasMoreV.pix) state.vpix += 1;
+    if (ri.fetched.pex && state.hasMoreI.pex) state.ipex += 1;
+    if (ri.fetched.pix && state.hasMoreI.pix) state.ipix += 1;
+    if (ri.fetched.com && state.hasMoreI.com) state.icom += 1;
+    tlog(`search done: +${all.length} novos, ${state.items.size} cards, prox v:${state.vpex}/${state.vpix} i:${state.ipex}/${state.ipix}/${state.icom} hasMoreV=${state.hasMoreV.pex}/${state.hasMoreV.pix} hasMoreI=${state.hasMoreI.pex}/${state.hasMoreI.pix}/${state.hasMoreI.com} docH=${document.documentElement.scrollHeight} winH=${window.innerHeight}`);
   } catch (err) {
     if (my !== epoch) return;
     tlog(`search FALHOU: ${err.message || err}`);
@@ -216,15 +278,20 @@ function markReady(id, filePath) {
   const prog = card.querySelector('.prog');
   if (prog) { prog.classList.add('hidden'); prog.textContent = ''; }
   // depois de pronto, o preview passa a ser o arquivo local
-  const video = card.querySelector('video');
-  if (video) { video.pause(); video.src = `file://${filePath}`; }
+  const media = card.querySelector('video, img');
+  if (media) {
+    if (media.tagName === 'VIDEO') { try { media.pause(); } catch {} }
+    media.src = `file://${filePath}`;
+  }
 }
 
 async function downloadItem(id) {
   const st = state.items.get(id); if (!st || st.status === 'downloading' || st.status === 'ready') return;
   markDownloading(id, 0);
   window.broll.prefetchThumb({ id, thumbUrl: st.data.thumb }); // background, p/ virar o fantasma do arrasto
-  const r = await window.broll.download({ item: st.data, query: state.query });
+  const r = st.data.kind === 'image'
+    ? await window.broll.downloadImage({ item: st.data, query: state.query })
+    : await window.broll.download({ item: st.data, query: state.query });
   if (r && r.filePath) markReady(id, r.filePath);
   else {
     const card = document.querySelector(`.card[data-id="${id}"]`); if (card) card.querySelector('.prog').classList.add('hidden');
@@ -240,7 +307,8 @@ window.broll.onProgress(({ id, pct }) => markDownloading(id, pct));
 const io = new IntersectionObserver((es) => {
   const hit = es.some(e => e.isIntersecting);
   const r = $('#sentinel').getBoundingClientRect();
-  tlog(`observer: visível=${hit} loading=${state.loading} hasMore=${state.hasMore.pex}/${state.hasMore.pix} cards=${state.items.size} sentinelY=${Math.round(r.top)} winH=${window.innerHeight}`);
+  const mV = state.hasMoreV, mI = state.hasMoreI;
+  tlog(`observer: visível=${hit} loading=${state.loading} hasMoreV=${mV.pex}/${mV.pix} hasMoreI=${mI.pex}/${mI.pix}/${mI.com} cards=${state.items.size} sentinelY=${Math.round(r.top)} winH=${window.innerHeight}`);
   if (hit) runSearch(false);
 }, { rootMargin: '600px' });
 io.observe($('#sentinel'));
@@ -306,6 +374,7 @@ $('#btnTest').addEventListener('click', async () => {
   await refreshConfigUI();
 });
 $('#btnOpen').addEventListener('click', () => window.broll.cacheOpen());
+$('#btnOriginals').addEventListener('click', () => window.broll.cacheOpenOriginals());
 $('#btnClear').addEventListener('click', async () => {
   await window.broll.cacheClear();
   document.querySelectorAll('.card.ready').forEach(c => {

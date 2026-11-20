@@ -14,6 +14,11 @@
 const axios = require('axios');
 
 const COMMONS_UA = 'broll/0.2 (https://github.com/Saimonsanbr/broll)';
+// garante o UA descritivo mesmo quando este módulo é usado fora do main
+// (upload.wikimedia.org retorna 403 sem User-Agent)
+if (!axios.defaults.headers.common['User-Agent']) {
+  axios.defaults.headers.common['User-Agent'] = COMMONS_UA;
+}
 
 // faixa de tamanho aceita (menor lado >= 480; maior lado <= 6000;
 // menor lado <= 4000) — decisão I7/I8
