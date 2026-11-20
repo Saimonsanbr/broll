@@ -542,12 +542,17 @@ function imageTargetFor(item, query) {
   return { plain, final: plain, ext };
 }
 
-async function applyCreditOverlay(magickBin, inputPath, outputPath, text, width) {
+async function applyCreditOverlay(magickBin, inputPath, outputPath, text, width, height) {
   const { runBin } = require('./tools');
   const { poppinsPath } = require('./tools');
   const os = require('os');
   const safe = String(text || '').replace(/"/g, "'").slice(0, 220);
-  const ps = Math.min(44, Math.max(20, Math.round(width / 42)));
+  // vertical usa teto maior: na vertical a largura é o lado menor e o texto
+  // encolheria; na horizontal/quadrada mantém o tamanho já aprovado
+  const cap = (Number(height) || 0) > width ? 64 : 44;
+  const ps = Math.min(cap, Math.max(20, Math.round(width / 42)));
+  // respiro e distância do topo proporcionais ao tamanho da letra
+  const bx = Math.round(ps * 0.7), by = Math.round(ps * 0.35), off = Math.round(ps * 0.6);
   // caixa justa no texto, com respiro nas laterais (não mais faixa ponta a ponta)
   const maxW = Math.min(width - 80, Math.max(280, Math.round(width * 0.7)));
   const font = poppinsPath();
@@ -560,9 +565,9 @@ async function applyCreditOverlay(magickBin, inputPath, outputPath, text, width)
       '-pointsize', String(ps), '-size', `${maxW}x`, '-gravity', 'center',
       `caption:${safe}`, raw], 30000);
     if (!r1.ok) throw new Error(`magick caption: ${r1.error}`);
-    const r2 = await runBin(magickBin, [raw, '-trim', '+repage', '-bordercolor', '#00000080', '-border', '26x14', strip], 30000);
+    const r2 = await runBin(magickBin, [raw, '-trim', '+repage', '-bordercolor', '#00000080', '-border', `${bx}x${by}`, strip], 30000);
     if (!r2.ok) throw new Error(`magick box: ${r2.error}`);
-    const r3 = await runBin(magickBin, [inputPath, strip, '-gravity', 'north', '-geometry', '+0+24', '-composite', outputPath], 60000);
+    const r3 = await runBin(magickBin, [inputPath, strip, '-gravity', 'north', '-geometry', `+0+${off}`, '-composite', outputPath], 60000);
     if (!r3.ok) throw new Error(`magick composite: ${r3.error}`);
   } finally {
     try { fs.rmSync(tmpd, { recursive: true, force: true }); } catch {}
@@ -635,7 +640,7 @@ ipcMain.handle('image:download', (_e, { item, query }) => new Promise((resolve) 
           `share-alike (obra derivada sob a mesma licença): ${lic.shareAlike ? 'sim' : 'não'}\n` +
           `crédito aplicado: ${item.attribution ? item.attribution.text : ''}\n` +
           `baixado em: ${new Date().toISOString()}\n`);
-        await applyCreditOverlay(magickBin, plain, final, item.attribution.text, item.width);
+        await applyCreditOverlay(magickBin, plain, final, item.attribution.text, item.width, item.height);
         try { fs.unlinkSync(plain); } catch {}
       }
       sendProgress(100);

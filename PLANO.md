@@ -539,6 +539,7 @@ Correções previstas:
 | 2026-11-20 | Fase 4 | Cards de vídeo e imagem no mesmo grid precisam de diferenciação imediata | Ícone SVG de tipo no topo-esquerdo (play/foto), aspecto 4:3 p/ imagem, badge textual de licença só no Commons |
 | 2026-11-20 | Fase 4 (pós-teste) | Thumb preta após baixar imagem: `markReady` trocava `<img>` para `file://`, bloqueado na página http do dev; com download rápido o hover restaurava o thumb (parecia “recuperar”), com Commons lento ficava preto | Imagem pronta mantém o thumb remoto (já em cache); arquivo local serve só p/ arrastar |
 | 2026-11-20 | Fase 4 (pós-teste) | Faixa de crédito ponta a ponta destoava da imagem | Caixa justa no texto (`caption` + `-trim` + `-border 26x14`), centralizada no topo |
+| 2026-11-20 | Fase 4 (pós-teste) | Crédito ficava pequeno em imagem vertical (pointsize usa a largura, que é o lado menor) | Teto 64 em vertical / 44 nos demais; respiro e distância do topo proporcionais à letra |
 
 ---
 
