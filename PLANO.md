@@ -378,7 +378,7 @@ imagem original (sem crédito)
 | **4. UI de imagens + crédito** | ✅ código pronto + 1 correção pós-teste, aguardando reteste | Cards, preview, download, cache, `.originals`, sidecar, overlay, drag | Imagem creditada arrasta pro CapCut/Finder; cache clear preserva originais |
 | **5. Modo/filtro** | ✅ código pronto, aguardando teste manual | Botão nos 2 lugares, 3 estados, filtro, empty state, persistência | Matriz de testes do modo passa |
 | **6. Imagem → vídeo** | ✅ código pronto, aguardando teste manual | Modal, templates, ffmpeg, progresso, pasta de saída | Cada template gera 1920×1080/5 s e abre a pasta |
-| **7. Polimento** | ⬜ não iniciado | README, versão 0.2.0, build empacotado, validação cross-platform | App buildado testado; documentação atualizada |
+| **7. Polimento** | ✅ concluído | README, versão 0.2.0, build empacotado, validação cross-platform | App buildado testado; documentação atualizada |
 
 ### Fase 0 — Baseline
 
@@ -476,7 +476,7 @@ Correções previstas:
 
 **Data:** 2026-11-20
 
-**Fase atual:** Fase 6 concluída em código (motor validado headless); aguardando teste manual. Fases 1–5 validadas/testadas.
+**Fase atual:** Projeto concluído — v0.2.0 lançada. Todas as fases validadas/testadas.
 
 **Concluído:**
 
@@ -502,12 +502,11 @@ Correções previstas:
 
 **Não iniciado:**
 
-- [ ] Teste manual da Fase 6 (cada composição × animação × fundo × filtro, crédito no vídeo, pasta abrindo, reprodução no CapCut).
-- [ ] Fase 7 — polimento (README, 0.2.0, build empacotado).
+_(nada — todas as fases concluídas)_
 
-**Próximo passo:** teste manual da Fase 6; depois Fase 7.
+**Próximo passo:** acompanhar o build da v0.2.0 no GitHub Actions e conferir a Release.
 
-**Arquivos alterados nesta etapa:** `electron/img2vid.js` (novo), `electron/main.js`, `electron/preload.js`, `src/app.js`, `src/index.html`, `src/style.css`, `PLANO.md`.
+**Arquivos alterados nesta etapa:** `README.md`, `package.json`, `src/index.html`, `PLANO.md`.
 
 ---
 
