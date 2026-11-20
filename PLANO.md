@@ -374,7 +374,7 @@ imagem original (sem crédito)
 | **0. Baseline** | ✅ concluído | Branch `feat/images-img2vid`; reproduzir os 2 bugs com logs; checklist de teste | Bugs reproduzidos e causa confirmada; nenhuma mudança de comportamento ainda |
 | **1. Bugs** | ✅ código pronto, aguardando teste manual | Correção do “pronto” travado + scroll do Mac | Stress test passa; arrasto confiável; scroll estável |
 | **2. Ferramentas** | ✅ código pronto, aguardando teste manual | Spike de binários; `tools.js`; status nas configurações | Crédito e vídeo funcionam sem Homebrew (se o bundle for viável) |
-| **3. Backend de imagens** | ⬜ não iniciado | Pexels fotos (web/API), Pixabay, Commons; licenças; paginação | Busca retorna imagens normalizadas e licenças corretas |
+| **3. Backend de imagens** | ✅ código pronto, aguardando UI (Fase 4) | Pexels fotos (web/API), Pixabay, Commons; licenças; paginação | Busca retorna imagens normalizadas e licenças corretas |
 | **4. UI de imagens + crédito** | ⬜ não iniciado | Cards, preview, download, cache, `.originals`, sidecar, overlay, drag | Imagem creditada arrasta pro CapCut/Finder; cache clear preserva originais |
 | **5. Modo/filtro** | ⬜ não iniciado | Botão nos 2 lugares, 3 estados, filtro, empty state, persistência | Matriz de testes do modo passa |
 | **6. Imagem → vídeo** | ⬜ não iniciado | Modal, templates, ffmpeg, progresso, pasta de saída | Cada template gera 1920×1080/5 s e abre a pasta |
@@ -476,7 +476,7 @@ Correções previstas:
 
 **Data:** 2026-11-20
 
-**Fase atual:** Fase 1 concluída em código; aguardando teste manual no app antes da Fase 2.
+**Fase atual:** Fase 3 em andamento (backend de imagens). Fases 1–2 validadas em teste manual.
 
 **Concluído:**
 
@@ -495,15 +495,16 @@ Correções previstas:
 - [x] `vite build` passando.
 - [x] Fase 2: spike prova que ffmpeg Homebrew não tem `drawtext`; pipeline validado sem ele (magick annotate + zoompan + overlay de PNG).
 - [x] Fase 2: `electron/tools.js` (detecção com fallback PATH/Homebrew/bin embutido/custom), IPC `tools:status`, status e caminhos customizados no drawer, fonte Poppins embutida (`assets/fonts`).
+- [x] Teste manual Fases 1–2 (2026-11-20): buscas “café”, “eu aq”, “car”; 71 e 168 cards via scroll contínuo sem travar; paginação até esgotar (`hasMore=false`); nenhum “pronto” travado; ferramentas detectadas.
+- [x] Fase 3: `electron/images.js` (módulo puro, testado com node) + IPC `search:images` + `preload.searchImages`; paginação independente (pex/pix por página, Commons por `gsroffset`); intercalação das 3 fontes; testes de licença (BY-SA ok com shareAlike, CC0 ok sem atribuição, BY-NC fora, fair use fora, desconhecida fora). Pixabay imagens validada com a chave real (500 hits).
 
 **Não iniciado:**
 
-- [ ] Teste manual das Fases 1–2 no app (`npm run dev:electron` ou build).
-- [ ] Fase 3 — backend de imagens (Pexels fotos, Pixabay, Commons).
+- [ ] Fase 4 — UI de imagens + crédito (cards, download, `.originals`, sidecar, overlay, drag).
 
-**Próximo passo:** usuário testa a Fase 1 (buscar, hover em vários cards, baixar, arrastar, rolar bastante); depois partimos para a Fase 2.
+**Próximo passo:** Fase 4 — cards de imagem, download com crédito, `.originals` + sidecar, arrasto.
 
-**Arquivos alterados nesta etapa:** `src/app.js`, `src/style.css`, `electron/main.js`, `PLANO.md`.
+**Arquivos alterados nesta etapa:** `electron/images.js` (novo), `electron/main.js`, `electron/preload.js`, `PLANO.md`.
 
 ---
 

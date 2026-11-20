@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('broll', {
   setConfig: (patch) => ipcRenderer.invoke('config:set', patch),
   testKeys: () => ipcRenderer.invoke('keys:test'),
   search: (args) => ipcRenderer.invoke('search:videos', args),
+  searchImages: (args) => ipcRenderer.invoke('search:images', args),
   download: (args) => ipcRenderer.invoke('video:download', args),
   localPath: (args) => ipcRenderer.invoke('video:local-path', args),
   onProgress: (cb) => ipcRenderer.on('video:progress', (_e, v) => cb(v)),

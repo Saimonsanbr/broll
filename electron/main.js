@@ -5,6 +5,7 @@ const fs = require('fs');
 const axios = require('axios');
 const Store = require('electron-store');
 const { getToolsStatus, runBin } = require('./tools');
+const IMG = require('./images');
 
 const store = new Store({ name: 'broll-config' });
 
@@ -349,6 +350,99 @@ ipcMain.handle('search:videos', async (_e, { query, pages = { pex: 1, pix: 1 }, 
 
   console.log(`[broll] search:done q="${query}" → ${merged.length} itens (${px.length}px/${pb.length}pb) hasMore=${hasMore.pex}/${hasMore.pix} fetched=${fetched.pex}/${fetched.pix}${errors.length ? ' ERR: ' + errors.join(' | ') : ''}`);
   return { items: merged, errors, hasMore, fetched, pexelsMode: pexelsKey ? 'api' : 'web', hasPixabay: Boolean(pixabayKey) };
+});
+
+// ---- IPC: busca de IMAGENS (Pexels fotos + Pixabay + Commons) ----
+ipcMain.handle('search:images', async (_e, { query, pages = { pex: 1, pix: 1, com: 1 }, perPage = 12 }) => {
+  const gap = Date.now() - lastSearchAt;
+  if (gap < SEARCH_GAP_MS) await new Promise(r => setTimeout(r, SEARCH_GAP_MS - gap));
+  lastSearchAt = Date.now();
+
+  const pexelsKey = store.get('pexelsKey', '');
+  const pixabayKey = store.get('pixabayKey', '');
+  const out = [];
+  const errors = [];
+  const hasMore = { pex: false, pix: false, com: false };
+  const fetched = { pex: false, pix: false, com: false };
+  console.log(`[broll] images:start q="${query}" pages=pex:${pages.pex}/pix:${pages.pix}/com:${pages.com} perPage=${perPage}`);
+
+  if (pexelsKey && pages.pex) {
+    try {
+      const data = await IMG.searchPexelsPhotosApi(query, pages.pex, perPage, pexelsKey);
+      const total = Number(data.total_results || 0);
+      hasMore.pex = total > 0 ? pages.pex * perPage < total : (data.photos || []).length >= perPage;
+      fetched.pex = true;
+      for (const p of data.photos || []) {
+        const it = IMG.normalizePexelsPhotoApi(p);
+        if (it) out.push(it);
+      }
+    } catch (err) {
+      const s = err?.response?.status;
+      errors.push(s === 401 ? 'Pexels fotos: chave inválida.' : s === 429 ? 'Pexels fotos: limite atingido, aguarde e role de novo.' : `Pexels fotos: ${err.message}`);
+      hasMore.pex = true;
+    }
+  } else if (pages.pex && Date.now() < pexelsWebCooldownUntil) {
+    hasMore.pex = true;
+    errors.push('Pexels web em pausa anti-bloqueio — volta sozinho em instantes, o resto continua funcionando.');
+  } else if (pages.pex) {
+    try {
+      const data = await IMG.searchPexelsPhotosWeb(query, pages.pex, perPage);
+      for (const v of data.data || []) {
+        const it = IMG.normalizePexelsPhotoWeb(v);
+        if (it) out.push(it);
+      }
+      hasMore.pex = (data.data || []).length >= perPage;
+      fetched.pex = true;
+    } catch (err) {
+      const s = err?.response?.status;
+      if (s === 429 || s === 403) {
+        pexelsWebCooldownUntil = Date.now() + 90000;
+        errors.push('Pexels web: limite/bloqueio temporário — pausa de ~90s, o resto continua funcionando.');
+      } else errors.push(`Pexels web fotos: ${err.message}`);
+      hasMore.pex = true;
+    }
+  }
+  if (pixabayKey && pages.pix) {
+    await new Promise(r => setTimeout(r, 250));
+    try {
+      const data = await IMG.searchPixabayImages(query, pages.pix, perPage, pixabayKey);
+      for (const h of data.hits || []) {
+        const it = IMG.normalizePixabayImage(h);
+        if (it) out.push(it);
+      }
+      hasMore.pix = (data.hits || []).length >= perPage;
+      fetched.pix = true;
+    } catch (err) {
+      const s = err?.response?.status;
+      errors.push(s === 429 ? 'Pixabay imagens: limite atingido, aguarde e role de novo.' : `Pixabay imagens: ${err.message}`);
+      hasMore.pix = true;
+    }
+  }
+  if (pages.com) {
+    await new Promise(r => setTimeout(r, 250));
+    try {
+      const offset = (Number(pages.com) - 1) * perPage;
+      const { items, skippedLicense, nextOffset } = await IMG.searchCommonsImages(query, Math.max(0, offset), perPage);
+      for (const it of items) out.push(it);
+      hasMore.com = nextOffset != null;
+      fetched.com = true;
+      if (skippedLicense) console.log(`[broll] commons: ${skippedLicense} resultado(s) com licença não permitida ignorado(s)`);
+    } catch (err) {
+      errors.push(`Wikimedia Commons: ${err.message}`);
+      hasMore.com = true;
+    }
+  }
+
+  // intercala as três fontes no grid
+  const px = out.filter(o => o.source === 'pexels' || o.source === 'pexels-web');
+  const pb = out.filter(o => o.source === 'pixabay');
+  const cm = out.filter(o => o.source === 'wikimedia');
+  const merged = [];
+  const n = Math.max(px.length, pb.length, cm.length);
+  for (let i = 0; i < n; i++) { if (px[i]) merged.push(px[i]); if (pb[i]) merged.push(pb[i]); if (cm[i]) merged.push(cm[i]); }
+
+  console.log(`[broll] images:done q="${query}" → ${merged.length} itens (${px.length}px/${pb.length}pb/${cm.length}cm) hasMore=${hasMore.pex}/${hasMore.pix}/${hasMore.com}`);
+  return { items: merged, errors, hasMore, fetched };
 });
 
 // ---- IPC: download (fila com pausa leve + progresso) ----
