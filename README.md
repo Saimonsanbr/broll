@@ -82,6 +82,8 @@ Na 0.2.0 esses programas **não vão embutidos** no app (bundle previsto pras pr
 
 ### Windows (recomendado: winget)
 
+> **A partir da 0.2.1 o instalador de Windows já traz ffmpeg + ImageMagick embutidos** — não precisa instalar nada. Abaixo só se você usa a versão portable antiga ou quer os programas no PATH.
+
 ```powershell
 winget install Gyan.FFmpeg
 winget install ImageMagick.ImageMagick

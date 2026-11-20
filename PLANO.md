@@ -556,6 +556,19 @@ _(nada — todas as fases concluídas)_
 
 ---
 
+## 15. Pós-lançamento — 0.2.1 (binários embutidos no Windows)
+
+> Decisão do usuário: embutir `ffmpeg.exe` + `magick.exe` portátil só na versão Windows.
+
+- `electron/tools.js`: lookup embutido passa a ser `<base>/bin/<win|mac|linux>/` (com fallback pro `bin/` legado).
+- `electron-builder.yml`: empacota `bin/**/*` (menos `.gitkeep`) + `THIRD-PARTY-NOTICES.md` (GPL do ffmpeg, licenças do IM e da Poppins).
+- `.gitignore`: `bin/` ignorado (pesado pro git) — os binários são baixados no CI, não commitados.
+- `dist.yml`: passo exclusivo do job Windows baixa ffmpeg (Gyan essentials) e IM portátil estático (7.1.2-36, Q16-HDRI x64), extrai `ffmpeg.exe` + `magick.exe` + DLLs pra `bin/win`.
+- `README.md`: Windows 0.2.1+ dispensa instalação; winget vira fallback.
+- Versão `0.2.1`, tag `v0.2.1` → build no Actions → Release com os mesmos 8 arquivos.
+
+---
+
 ## 9. Riscos e pontos a validar (spikes)
 
 | Risco | Impacto | Como validar |

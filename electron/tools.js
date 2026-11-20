@@ -53,28 +53,31 @@ function findBinary(names) {
   return null;
 }
 
-function resolveFfmpeg(custom) {
-  if (custom && isExec(custom)) return custom;
-  // binários embutidos por plataforma (quando existirem)
-  const plat = process.platform;
-  const bundled = plat === 'win32' ? ['ffmpeg.exe'] : ['ffmpeg'];
-  for (const n of bundled) {
-    const p = path.join(appBase(), 'bin', n);
+const PLAT_SUB = process.platform === 'win32' ? 'win' : process.platform === 'darwin' ? 'mac' : 'linux';
+
+// binário embutido: <base>/bin/<win|mac|linux>/ (CI baixa por plataforma)
+// + fallback legado <base>/bin/
+function bundledBin(name) {
+  for (const d of [path.join(appBase(), 'bin', PLAT_SUB), path.join(appBase(), 'bin')]) {
+    const p = path.join(d, name);
     if (isExec(p)) return p;
   }
-  return findBinary(plat === 'win32' ? ['ffmpeg.exe', 'ffmpeg'] : ['ffmpeg']);
+  return null;
+}
+
+function resolveFfmpeg(custom) {
+  if (custom && isExec(custom)) return custom;
+  const hit = bundledBin(process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+  if (hit) return hit;
+  return findBinary(process.platform === 'win32' ? ['ffmpeg.exe', 'ffmpeg'] : ['ffmpeg']);
 }
 
 function resolveMagick(custom) {
   if (custom && isExec(custom)) return custom;
-  const plat = process.platform;
-  const bundled = plat === 'win32' ? ['magick.exe'] : ['magick'];
-  for (const n of bundled) {
-    const p = path.join(appBase(), 'bin', n);
-    if (isExec(p)) return p;
-  }
+  const hit = bundledBin(process.platform === 'win32' ? 'magick.exe' : 'magick');
+  if (hit) return hit;
   // ImageMagick 7 = `magick`, ImageMagick 6 = `convert`
-  return findBinary(plat === 'win32' ? ['magick.exe', 'magick'] : ['magick', 'convert']);
+  return findBinary(process.platform === 'win32' ? ['magick.exe', 'magick'] : ['magick', 'convert']);
 }
 
 function runBin(bin, args, timeoutMs = 30000) {

@@ -7,6 +7,9 @@ files:
   - electron/**
   - assets/**
   - package.json
+  - THIRD-PARTY-NOTICES.md
+  - bin/**/*
+  - '!bin/.gitkeep'
 mac:
   category: public.app-category.video
   icon: assets/icon.icns

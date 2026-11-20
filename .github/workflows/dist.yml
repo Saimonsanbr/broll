@@ -25,12 +25,30 @@ jobs:
           - os: ubuntu-latest
             name: linux
     runs-on: ${{ matrix.os }}
+    env:
+      FFMPEG_URL: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+      IM_URL: https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-36/ImageMagick-7.1.2-36-portable-Q16-HDRI-x64.7z
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm ci
+      - if: matrix.name == 'win'
+        name: bundle ffmpeg + magick (windows)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path bin/win | Out-Null
+          Invoke-WebRequest -Uri $env:FFMPEG_URL -OutFile ffmpeg.zip
+          Expand-Archive ffmpeg.zip -DestinationPath ff-tmp
+          Copy-Item ff-tmp/*/bin/ffmpeg.exe bin/win/
+          Invoke-WebRequest -Uri $env:IM_URL -OutFile magick.7z
+          & "C:\Program Files\7-Zip\7z.exe" x magick.7z -oim-tmp | Out-Null
+          $magick = Get-ChildItem -Recurse -Path im-tmp -Filter magick.exe | Select-Object -First 1
+          Copy-Item $magick.FullName bin/win/
+          Copy-Item (Join-Path $magick.DirectoryName '*.dll') bin/win/
+          Remove-Item -Recurse -Force ff-tmp, im-tmp, ffmpeg.zip, magick.7z
+          Get-ChildItem bin/win
       - run: npm run dist
       - uses: actions/upload-artifact@v4
         with:
