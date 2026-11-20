@@ -376,7 +376,7 @@ imagem original (sem crédito)
 | **2. Ferramentas** | ✅ código pronto, aguardando teste manual | Spike de binários; `tools.js`; status nas configurações | Crédito e vídeo funcionam sem Homebrew (se o bundle for viável) |
 | **3. Backend de imagens** | ✅ código pronto, aguardando UI (Fase 4) | Pexels fotos (web/API), Pixabay, Commons; licenças; paginação | Busca retorna imagens normalizadas e licenças corretas |
 | **4. UI de imagens + crédito** | ✅ código pronto + 1 correção pós-teste, aguardando reteste | Cards, preview, download, cache, `.originals`, sidecar, overlay, drag | Imagem creditada arrasta pro CapCut/Finder; cache clear preserva originais |
-| **5. Modo/filtro** | ⬜ não iniciado | Botão nos 2 lugares, 3 estados, filtro, empty state, persistência | Matriz de testes do modo passa |
+| **5. Modo/filtro** | ✅ código pronto, aguardando teste manual | Botão nos 2 lugares, 3 estados, filtro, empty state, persistência | Matriz de testes do modo passa |
 | **6. Imagem → vídeo** | ⬜ não iniciado | Modal, templates, ffmpeg, progresso, pasta de saída | Cada template gera 1920×1080/5 s e abre a pasta |
 | **7. Polimento** | ⬜ não iniciado | README, versão 0.2.0, build empacotado, validação cross-platform | App buildado testado; documentação atualizada |
 
@@ -476,7 +476,7 @@ Correções previstas:
 
 **Data:** 2026-11-20
 
-**Fase atual:** Fase 3 em andamento (backend de imagens). Fases 1–2 validadas em teste manual.
+**Fase atual:** Fase 5 concluída em código; aguardando teste manual. Fases 1–4 validadas/testadas.
 
 **Concluído:**
 
@@ -500,12 +500,12 @@ Correções previstas:
 
 **Não iniciado:**
 
-- [ ] Teste manual da Fase 4 no app (buscar, baixar imagem Commons com crédito, verificar `.originals`, arrastar).
-- [ ] Fase 5 — modo/filtro (botão, 3 estados, empty state, persistência).
+- [ ] Teste manual da Fase 5 no app (3 modos × busca × filtro × scroll × empty states × persistência).
+- [ ] Fase 6 — imagem → vídeo (modal, templates, ffmpeg, progresso, pasta de saída).
 
-**Próximo passo:** teste manual da Fase 4; depois Fase 5.
+**Próximo passo:** teste manual da Fase 5; depois Fase 6.
 
-**Arquivos alterados nesta etapa:** `electron/main.js`, `electron/preload.js`, `src/app.js`, `src/index.html`, `src/style.css`, `PLANO.md`.
+**Arquivos alterados nesta etapa:** `src/app.js`, `src/index.html`, `src/style.css`, `electron/main.js`, `PLANO.md`.
 
 ---
 

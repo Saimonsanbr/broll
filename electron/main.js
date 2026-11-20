@@ -202,6 +202,7 @@ ipcMain.handle('config:get', () => ({
   pexelsKey: store.get('pexelsKey', ''),
   pixabayKey: store.get('pixabayKey', ''),
   maxQuality: store.get('maxQuality', 1080),
+  mediaMode: store.get('mediaMode', 'both'),
   ffmpegPath: store.get('ffmpegPath', ''),
   magickPath: store.get('magickPath', '')
 }));

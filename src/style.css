@@ -34,6 +34,18 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system
 .keywarn{margin-top:12px;color:#ffb3b3}
 .linkbtn{background:none;border:0;color:var(--red);cursor:pointer;text-decoration:underline;font-size:13px}
 
+/* modo de mídia: ambos / imagens / vídeos */
+.modebtn{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:20px;padding:9px 18px;font-size:13.5px;cursor:pointer;margin-top:14px;transition:border-color .25s,background .25s}
+.modebtn:hover{border-color:var(--red)}
+.modebtn.small{margin-top:0;padding:4px 12px;font-size:12px}
+.modebtn.pop{animation:modePop .3s ease}
+@keyframes modePop{40%{transform:scale(.93)}}
+
+/* empty state de modo (busca atual não tem o tipo exibido) */
+#emptyMode{text-align:center;color:var(--mut);padding:70px 20px}
+#emptyMode svg{width:76px;height:76px;opacity:.55;margin-bottom:6px}
+#emptyMode p{max-width:420px;margin:10px auto 18px;font-size:14px;line-height:1.6}
+
 /* results grid */
 #results{padding:14px 14px 40px}
 #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}

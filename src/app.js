@@ -13,6 +13,7 @@ function releasePreview(video) {
 
 const state = {
   query: '', perPage: 12, loading: false,
+  mode: 'both', searchMode: 'both', // both | images | videos
   vpex: 1, vpix: 1, ipex: 1, ipix: 1, icom: 1,
   hasMoreV: { pex: true, pix: true },
   hasMoreI: { pex: true, pix: true, com: true },
@@ -34,6 +35,9 @@ async function refreshConfigUI() {
   const info = await window.broll.cacheInfo();
   $('#cacheInfo').textContent = `${info.count} arquivos · ${(info.bytes / 1048576).toFixed(1)} MB · ${info.dir}`;
   $('#originalsInfo').textContent = `originais de segurança: ${info.originalsDir || ''} (preservados no limpar cache)`;
+  state.mode = ['both', 'images', 'videos'].includes(cfg.mediaMode) ? cfg.mediaMode : 'both';
+  state.searchMode = state.searchMode || 'both';
+  updateModeButtons(false);
   await refreshToolsUI();
 }
 
@@ -82,8 +86,15 @@ function noticeAppend(msgs) {
 function updateTail(showLoader) {
   const el = $('#loadingMore');
   if (!el) return;
-  const mV = state.hasMoreV, mI = state.hasMoreI;
-  const finished = !mV.pex && !mV.pix && !mI.pex && !mI.pix && !mI.com && state.items.size > 0;
+  // empty state de modo: sem rodapé
+  if (!$('#emptyMode').classList.contains('hidden')) {
+    el.classList.add('hidden'); el.classList.remove('done');
+    return;
+  }
+  const mV = state.hasMoreV, mI = state.hasMoreI, sm = state.searchMode || 'both';
+  const vDone = (sm === 'images') || (!mV.pex && !mV.pix);
+  const iDone = (sm === 'videos') || (!mI.pex && !mI.pix && !mI.com);
+  const finished = vDone && iDone && state.items.size > 0;
   if (showLoader) {
     el.classList.remove('hidden'); el.classList.remove('done');
     el.innerHTML = '<span class="spin"></span>carregando mais resultados…';
@@ -93,6 +104,70 @@ function updateTail(showLoader) {
   } else {
     el.classList.add('hidden'); el.classList.remove('done');
   }
+}
+
+// ---- modo de mídia: both | images | videos ----
+// regra de visibilidade: display 'both' só mostra se a busca trouxe os dois
+// tipos; modo único só mostra se a busca inclui aquele tipo. Fora disso,
+// a tela fica vazia (emptyMode) — intencional, sem refazer a busca.
+const MODE_LABEL = { both: 'ambos', images: 'imagens', videos: 'vídeos' };
+const KIND_OF_MODE = { images: 'image', videos: 'video' };
+
+function visibleKinds() {
+  const sm = state.searchMode || 'both', m = state.mode;
+  if (m === 'both') return sm === 'both' ? ['video', 'image'] : [];
+  return (sm === 'both' || sm === m) ? [KIND_OF_MODE[m]] : [];
+}
+
+function applyModeFilter() {
+  const kinds = visibleKinds();
+  let shown = 0;
+  document.querySelectorAll('#grid .card').forEach(c => {
+    const st = state.items.get(c.dataset.id);
+    const show = Boolean(st && kinds.includes(st.data.kind));
+    c.classList.toggle('hidden', !show);
+    if (show) shown++;
+  });
+  const hasAny = state.items.size > 0;
+  const mismatch = hasAny && shown === 0;
+  $('#emptyMode').classList.toggle('hidden', !mismatch);
+  $('#grid').classList.toggle('hidden', mismatch);
+  if (mismatch) {
+    $('#empty').classList.add('hidden');
+    const onlyImages = state.searchMode === 'images';
+    const wantLabel = MODE_LABEL[state.mode] || MODE_LABEL.both;
+    $('#emptyModeText').textContent = onlyImages
+      ? `Esta busca só tem imagens. Pesquise novamente para encontrar vídeos.`
+      : `Esta busca só tem vídeos. Pesquise novamente para encontrar imagens.`;
+    $('#emptyModeBtn').textContent = state.mode === 'both'
+      ? `Pesquisar em “ambos”`
+      : `Pesquisar ${wantLabel}`;
+  }
+  updateTail(false);
+}
+
+function updateModeButtons(pop) {
+  const full = state.mode === 'both' ? 'ambos (vídeos e fotos)' : MODE_LABEL[state.mode];
+  for (const sel of ['#modeHome', '#modeTop']) {
+    const b = $(sel);
+    if (!b) continue;
+    b.textContent = sel === '#modeHome' ? full : MODE_LABEL[state.mode];
+    b.setAttribute('aria-label', `Modo de mídia: ${full}. Clique para alternar.`);
+    if (pop) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+  }
+}
+
+async function setMode(m, pop) {
+  if (!MODE_LABEL[m]) return;
+  state.mode = m;
+  try { await window.broll.setConfig({ mediaMode: m }); } catch {}
+  updateModeButtons(pop);
+  applyModeFilter();
+}
+
+function cycleMode() {
+  const next = state.mode === 'both' ? 'images' : state.mode === 'images' ? 'videos' : 'both';
+  setMode(next, true);
 }
 
 // ícone de tipo: só UI, nunca vai para o arquivo exportado
@@ -197,17 +272,24 @@ async function runSearch(reset) {
     state.ipex = 1; state.ipix = 1; state.icom = 1;
     state.hasMoreV = { pex: true, pix: true };
     state.hasMoreI = { pex: true, pix: true, com: true };
+    state.searchMode = state.mode;
     state.items.clear();
+    $('#grid').classList.remove('hidden');
+    $('#emptyMode').classList.add('hidden');
     $('#grid').querySelectorAll('video').forEach(releasePreview);
     $('#grid').innerHTML = ''; $('#empty').classList.add('hidden');
   }
   const mV = state.hasMoreV, mI = state.hasMoreI;
-  const wantV = mV.pex || mV.pix, wantI = mI.pex || mI.pix || mI.com;
+  // busca nova usa o modo ativo; rolagem usa o modo da busca (carrega em
+  // segundo plano mesmo com filtro, p/ a troca ser instantânea)
+  const fm = reset ? state.mode : (state.searchMode || 'both');
+  const wantV = (fm === 'both' || fm === 'videos') && (mV.pex || mV.pix);
+  const wantI = (fm === 'both' || fm === 'images') && (mI.pex || mI.pix || mI.com);
   if (!wantV && !wantI) { tlog(`search skip reset=${reset}: fontes esgotadas`); return; }
   if (!reset && state.loading) { tlog('search skip: já carregando'); return; }
   const my = ++epoch; // toda chamada aceita vira dona; a anterior vira obsoleta sem travar o loading
   state.loading = true;
-  tlog(`search start reset=${reset} vpex:${mV.pex ? state.vpex : 0} vpix:${mV.pix ? state.vpix : 0} ipex:${mI.pex ? state.ipex : 0} ipix:${mI.pix ? state.ipix : 0} icom:${mI.com ? state.icom : 0}`);
+  tlog(`search start reset=${reset} mode=${fm} vpex:${wantV && mV.pex ? state.vpex : 0} vpix:${wantV && mV.pix ? state.vpix : 0} ipex:${wantI && mI.pex ? state.ipex : 0} ipix:${wantI && mI.pix ? state.ipix : 0} icom:${wantI && mI.com ? state.icom : 0}`);
   try {
     updateTail(!reset);
     const pagesV = { pex: mV.pex ? state.vpex : 0, pix: mV.pix ? state.vpix : 0 };
@@ -247,6 +329,7 @@ async function runSearch(reset) {
     if (ri.fetched.pex && state.hasMoreI.pex) state.ipex += 1;
     if (ri.fetched.pix && state.hasMoreI.pix) state.ipix += 1;
     if (ri.fetched.com && state.hasMoreI.com) state.icom += 1;
+    applyModeFilter();
     tlog(`search done: +${all.length} novos, ${state.items.size} cards, prox v:${state.vpex}/${state.vpix} i:${state.ipex}/${state.ipix}/${state.icom} hasMoreV=${state.hasMoreV.pex}/${state.hasMoreV.pix} hasMoreI=${state.hasMoreI.pex}/${state.hasMoreI.pix}/${state.hasMoreI.com} docH=${document.documentElement.scrollHeight} winH=${window.innerHeight}`);
   } catch (err) {
     if (my !== epoch) return;
@@ -353,6 +436,13 @@ $('#searchTop').addEventListener('input', (e) => {
 });
 $('#btnConfig').addEventListener('click', openDrawer);
 $('#btnClose').addEventListener('click', closeDrawer);
+$('#modeHome').addEventListener('click', cycleMode);
+$('#modeTop').addEventListener('click', cycleMode);
+$('#emptyModeBtn').addEventListener('click', () => {
+  // pesquisa de novo no modo exibido (que a busca atual não contém)
+  tlog(`emptyMode: pesquisando de novo em "${state.mode}"`);
+  runSearch(true);
+});
 $('#scrim').addEventListener('click', closeDrawer);
 $('#keyWarnBtn').addEventListener('click', openDrawer);
 $('#btnSave').addEventListener('click', async () => {
