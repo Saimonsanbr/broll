@@ -39,14 +39,13 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system
 #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .card{position:relative;background:var(--card);border:2px solid transparent;border-radius:10px;overflow:hidden;cursor:pointer;user-select:none;animation:cardIn .45s cubic-bezier(.2,.7,.25,1) both}
 @keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
-.card video{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#000;border-radius:8px}
+.card video{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#000;border-radius:8px;-webkit-user-drag:none}
 .card.ready{border-color:var(--green);cursor:grab}
 .card .meta{display:flex;align-items:center;gap:6px;padding:7px 8px;font-size:12px;color:var(--mut)}
 .card .meta .src{font-size:10.5px;padding:2px 7px;border-radius:20px;background:#00000060;border:1px solid var(--line);color:var(--txt)}
 .card .meta .au{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .card .dur{position:absolute;top:8px;right:8px;font-size:11px;background:#000000aa;padding:2px 7px;border-radius:8px}
 .card .prog{position:absolute;inset:auto 0 0 0;height:100%;display:flex;align-items:center;justify-content:center;background:#00000088;font-weight:700;font-size:15px}
-.card .stat{position:absolute;left:8px;top:8px;font-size:11px;background:#000000aa;padding:2px 7px;border-radius:8px;color:var(--green)}
 #notice{margin:0 0 10px}
 .note{background:#3a2a2a;border:1px solid #5a3535;color:#ffd7d7;padding:8px 10px;border-radius:10px;margin-bottom:8px;font-size:13px}
 #empty{text-align:center;color:var(--mut);padding:40px 0}

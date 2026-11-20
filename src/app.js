@@ -2,6 +2,15 @@ const $ = (s) => document.querySelector(s);
 // log só p/ terminal (via main) + devtools — nada na interface
 const tlog = (m) => { try { console.log('[broll:ui]', m); window.broll.debugLog(m); } catch {} };
 
+// libera o decoder/rede do preview ao sair do hover — evita acumular players e travar o scroll
+function releasePreview(video) {
+  try {
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+  } catch {}
+}
+
 const state = {
   query: '', pagePex: 1, pagePix: 1, perPage: 12, loading: false,
   hasMore: { pex: true, pix: true },
@@ -67,19 +76,25 @@ function cardEl(item) {
   const card = document.createElement('div');
   card.className = 'card'; card.dataset.id = item.id;
   card.innerHTML = `
-    <video muted loop playsinline preload="none" poster="${item.thumb || ''}"></video>
+    <video muted loop playsinline preload="none" draggable="false" poster="${item.thumb || ''}"></video>
     <span class="dur">${item.duration ? item.duration + 's' : ''} · ${item.q || item.height}p</span>
-    <span class="stat hidden"></span>
     <div class="prog hidden">0%</div>
     <div class="meta"><span class="src">${item.source}</span><span class="au" title="${item.author}">${item.author}</span></div>`;
   const video = card.querySelector('video');
+  // o <video> é draggable por padrão no Chromium e pode roubar o drag do card
+  video.draggable = false;
+  let thumbAsked = false;
 
   // hover = stream remoto, sem baixar
   card.addEventListener('mouseenter', () => {
+    // baixa a thumb só do card que o mouse tocou (fantasma do arrasto),
+    // em vez de disparar uma requisição para cada resultado da busca
+    if (!thumbAsked) { thumbAsked = true; window.broll.prefetchThumb({ id: item.id, thumbUrl: item.thumb }); }
     if (!video.src) video.src = item.previewUrl;
     video.play().catch(() => {});
   });
-  card.addEventListener('mouseleave', () => { video.pause(); });
+  // ao sair, libera a mídia; sem isso os players se acumulam e o renderer engasga
+  card.addEventListener('mouseleave', () => releasePreview(video));
 
   // 1 clique = baixa (com overlay %)
   card.addEventListener('click', async (e) => {
@@ -121,6 +136,7 @@ async function runSearch(reset) {
     state.pagePex = 1; state.pagePix = 1;
     state.hasMore = { pex: true, pix: true };
     state.items.clear();
+    $('#grid').querySelectorAll('video').forEach(releasePreview);
     $('#grid').innerHTML = ''; $('#empty').classList.add('hidden');
   }
   if (!state.hasMore.pex && !state.hasMore.pix) { tlog(`search skip reset=${reset}: fontes esgotadas`); return; }
@@ -142,9 +158,11 @@ async function runSearch(reset) {
     items.forEach((it, i) => renderItem(it, i));
     // marca os já em cache como prontos (sem re-baixar) + thumb local p/ o fantasma do arrasto
     for (const it of items) {
-      window.broll.prefetchThumb({ id: it.id, thumbUrl: it.thumb });
       const p = await window.broll.localPath({ item: it, query: q });
-      if (p) markReady(it.id, p);
+      if (p) {
+        markReady(it.id, p);
+        window.broll.prefetchThumb({ id: it.id, thumbUrl: it.thumb });
+      }
     }
     if (fetched.pex && state.hasMore.pex) state.pagePex += 1;
     if (fetched.pix && state.hasMore.pix) state.pagePix += 1;
@@ -162,20 +180,25 @@ async function runSearch(reset) {
 
 function markDownloading(id, pct) {
   const st = state.items.get(id); if (!st) return;
+  // evento de progresso atrasado não pode rebaixar um card que já está pronto
+  if (st.status === 'ready') return;
   st.status = 'downloading'; st.pct = pct;
   const card = document.querySelector(`.card[data-id="${id}"]`); if (!card) return;
-  const prog = card.querySelector('.prog'); prog.classList.remove('hidden'); prog.textContent = pct >= 100 ? 'pronto' : `baixando ${pct}%`;
+  const prog = card.querySelector('.prog');
+  prog.classList.remove('hidden');
+  prog.textContent = pct >= 100 ? 'finalizando…' : `baixando ${pct}%`;
 }
 
 function markReady(id, filePath) {
   const st = state.items.get(id); if (!st) return;
-  st.status = 'ready'; st.filePath = filePath;
+  st.status = 'ready'; st.filePath = filePath; st.pct = 100;
   const card = document.querySelector(`.card[data-id="${id}"]`); if (!card) return;
   card.classList.add('ready'); card.setAttribute('draggable', 'true');
-  card.querySelector('.prog').classList.add('hidden');
-  const stat = card.querySelector('.stat'); stat.classList.remove('hidden'); stat.textContent = 'pronto p/ arrastar';
+  const prog = card.querySelector('.prog');
+  if (prog) { prog.classList.add('hidden'); prog.textContent = ''; }
   // depois de pronto, o preview passa a ser o arquivo local
-  const video = card.querySelector('video'); video.src = `file://${filePath}`;
+  const video = card.querySelector('video');
+  if (video) { video.pause(); video.src = `file://${filePath}`; }
 }
 
 async function downloadItem(id) {
@@ -260,8 +283,13 @@ $('#btnTest').addEventListener('click', async () => {
 $('#btnOpen').addEventListener('click', () => window.broll.cacheOpen());
 $('#btnClear').addEventListener('click', async () => {
   await window.broll.cacheClear();
-  document.querySelectorAll('.card.ready').forEach(c => { c.classList.remove('ready'); c.removeAttribute('draggable'); c.querySelector('.stat').classList.add('hidden'); });
-  for (const [, st] of state.items) { st.status = 'remote'; st.filePath = null; }
+  document.querySelectorAll('.card.ready').forEach(c => {
+    c.classList.remove('ready');
+    c.removeAttribute('draggable');
+    const video = c.querySelector('video');
+    if (video) releasePreview(video);
+  });
+  for (const [, st] of state.items) { st.status = 'remote'; st.filePath = null; st.pct = 0; }
   await refreshConfigUI();
 });
 $('#btnLogs').addEventListener('click', async () => {

@@ -9,8 +9,8 @@
 > | Branch de trabalho planejada | `feat/images-img2vid` |
 > | Versão atual | `0.1.1` |
 > | Versão alvo | `0.2.0` |
-> | Última atualização | 2026-11-19 |
-> | Status geral | **Planejamento concluído. Nenhuma linha de código alterada ainda.** |
+> | Última atualização | 2026-11-20 |
+> | Status geral | **Fase 1 concluída (código). Aguardando teste manual no app.** |
 
 ---
 
@@ -371,8 +371,8 @@ imagem original (sem crédito)
 
 | Fase | Status | Entrega | Critério de pronto |
 |---|---|---|---|
-| **0. Baseline** | ⬜ não iniciado | Branch `feat/images-img2vid`; reproduzir os 2 bugs com logs; checklist de teste | Bugs reproduzidos e causa confirmada; nenhuma mudança de comportamento ainda |
-| **1. Bugs** | ⬜ não iniciado | Correção do “pronto” travado + scroll do Mac | Stress test passa; arrasto confiável; scroll estável |
+| **0. Baseline** | ✅ concluído | Branch `feat/images-img2vid`; reproduzir os 2 bugs com logs; checklist de teste | Bugs reproduzidos e causa confirmada; nenhuma mudança de comportamento ainda |
+| **1. Bugs** | ✅ código pronto, aguardando teste manual | Correção do “pronto” travado + scroll do Mac | Stress test passa; arrasto confiável; scroll estável |
 | **2. Ferramentas** | ⬜ não iniciado | Spike de binários; `tools.js`; status nas configurações | Crédito e vídeo funcionam sem Homebrew (se o bundle for viável) |
 | **3. Backend de imagens** | ⬜ não iniciado | Pexels fotos (web/API), Pixabay, Commons; licenças; paginação | Busca retorna imagens normalizadas e licenças corretas |
 | **4. UI de imagens + crédito** | ⬜ não iniciado | Cards, preview, download, cache, `.originals`, sidecar, overlay, drag | Imagem creditada arrasta pro CapCut/Finder; cache clear preserva originais |
@@ -474,9 +474,9 @@ Correções previstas:
 
 ## 7. Onde estamos
 
-**Data:** 2026-11-19
+**Data:** 2026-11-20
 
-**Fase atual:** planejamento concluído; aguardando “pode começar” para a Fase 0.
+**Fase atual:** Fase 1 concluída em código; aguardando teste manual no app antes da Fase 2.
 
 **Concluído:**
 
@@ -488,18 +488,21 @@ Correções previstas:
 - [x] Registrar a decisão do ícone SVG de tipo de mídia (UI-only) nos cards.
 - [x] Definir a remoção do badge “pronto p/ arrastar” (fica só contorno verde + ícone de tipo).
 - [x] Criar este documento.
+- [x] Criar branch `feat/images-img2vid`.
+- [x] Fase 1: corrigir “pronto” travado (guarda `ready`, `markReady` atômico, overlay “finalizando…”, download via `.part` + rename, `local-path` só com size > 0).
+- [x] Fase 1: endurecer drag (`draggable=false` + CSS, remoção do badge `.stat`).
+- [x] Fase 1: aliviar scroll (liberar `src`/`load()` no `mouseleave`, liberar vídeos na nova busca e no limpar cache, throttle de progresso no main, prefetch de thumb só no hover e em cards prontos).
+- [x] `vite build` passando.
 
 **Não iniciado:**
 
-- [ ] Criar branch `feat/images-img2vid`.
-- [ ] Alterar qualquer código.
-- [ ] Fazer commits.
-- [ ] Rodar build.
-- [ ] Testar os binários embutidos.
+- [ ] Teste manual da Fase 1 no app (`npm run dev:electron` ou build).
+- [ ] Fase 2 — spike de binários e `electron/tools.js`.
+- [ ] Fases 3–7.
 
-**Próximo passo:** Fase 0 — criar branch, confirmar árvore limpa e reproduzir os dois bugs com logs.
+**Próximo passo:** usuário testa a Fase 1 (buscar, hover em vários cards, baixar, arrastar, rolar bastante); depois partimos para a Fase 2.
 
-**Arquivos alterados nesta etapa:** apenas `PLANO.md` (novo, ainda não commitado).
+**Arquivos alterados nesta etapa:** `src/app.js`, `src/style.css`, `electron/main.js`, `PLANO.md`.
 
 ---
 
@@ -525,6 +528,8 @@ Correções previstas:
 | 2026-11-19 | Planejamento | O vídeo gerado é sempre 16:9, mesmo com imagem vertical/quadrada | Composição com recorte/fundo; 1920×1080 |
 | 2026-11-19 | Planejamento | Crédito no topo/centro combina com o estilo do app e não atrapalha a composição | Poppins, branco ~70%, sombra suave; testar antes de integrar |
 | 2026-11-19 | Planejamento | Embutir binários resolve o atrito de instalação, mas traz tamanho e licenças | Spike com ffmpeg estático + `drawtext`; decidir com dados |
+| 2026-11-20 | Fase 1 | `prefetchThumb` disparado para cada resultado da busca gerava N requisições por página | Prefetch só no hover e em cards já em cache; reduz tráfego e ajuda o scroll |
+| 2026-11-20 | Fase 1 | Download direto no nome final permitia `local-path` ver arquivo incompleto | Gravar em `.part` e renomear só no `finish`; `local-path` exige size > 0 |
 
 ---
 

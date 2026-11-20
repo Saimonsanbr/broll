@@ -355,26 +355,48 @@ ipcMain.handle('video:download', (_e, { item, query }) => new Promise((resolve) 
     const dir = ensureCache();
     const fname = `${sanitize(query)}-${item.id}-${item.width}x${item.height}.mp4`;
     const filePath = path.join(dir, fname);
+
+    // progresso throttled: 1 evento por % inteiro, no máximo ~10/s.
+    // sem isso, um arquivo grande dispara milhares de mensagens IPC e engasga o renderer.
+    let lastPct = -1, lastSentAt = 0;
+    const sendProgress = (pct) => {
+      if (!win || win.isDestroyed()) return;
+      const now = Date.now();
+      const done = pct >= 100;
+      if (done ? lastPct < 100 : (pct !== lastPct && now - lastSentAt >= 100)) {
+        lastPct = pct; lastSentAt = now;
+        win.webContents.send('video:progress', { id: item.id, pct });
+      }
+    };
+
     if (fs.existsSync(filePath) && fs.statSync(filePath).size > 0) {
-      if (win) win.webContents.send('video:progress', { id: item.id, pct: 100 });
+      sendProgress(100);
       resolve({ filePath }); return;
     }
+    // grava em .part e só renomeia no fim: evita que um local-path concorrente
+    // veja o arquivo pela metade e marque o card como pronto cedo demais
+    const partPath = `${filePath}.part`;
     try {
       const res = await axios.get(item.downloadUrl, { responseType: 'stream', timeout: 60000 });
       const total = Number(res.headers['content-length'] || 0);
       await new Promise((res2, rej) => {
-        const w = fs.createWriteStream(filePath);
+        const w = fs.createWriteStream(partPath);
         let done = 0;
         res.data.on('data', (c) => {
           done += c.length;
-          if (total && win) win.webContents.send('video:progress', { id: item.id, pct: Math.round(done / total * 100) });
+          if (total) sendProgress(Math.round(done / total * 100));
         });
         res.data.pipe(w);
-        w.on('finish', res2); w.on('error', rej); res.data.on('error', rej);
+        res.data.on('error', rej);
+        w.on('error', rej);
+        w.on('finish', () => {
+          try { fs.renameSync(partPath, filePath); res2(); } catch (e) { rej(e); }
+        });
       });
-      if (win) win.webContents.send('video:progress', { id: item.id, pct: 100 });
+      sendProgress(100);
       resolve({ filePath });
     } catch (err) {
+      try { fs.unlinkSync(partPath); } catch {}
       try { fs.unlinkSync(filePath); } catch {}
       resolve({ error: String(err.message || err) });
     }
@@ -384,7 +406,9 @@ ipcMain.handle('video:download', (_e, { item, query }) => new Promise((resolve) 
 ipcMain.handle('video:local-path', (_e, { item, query }) => {
   const dir = ensureCache();
   const p = path.join(dir, `${sanitize(query)}-${item.id}-${item.width}x${item.height}.mp4`);
-  return fs.existsSync(p) ? p : null;
+  try {
+    return fs.existsSync(p) && fs.statSync(p).size > 0 ? p : null;
+  } catch { return null; }
 });
 
 // ---- drag nativo: renderer faz send('drag:start', {filePath, id}) no ondragstart ----
