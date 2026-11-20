@@ -552,6 +552,8 @@ Correções previstas:
 | 2026-11-20 | Fase 6 (pós-teste) | Zoom tremia; pan era suave (jitter do `zoompan` por arredondamento) | Base do zoom em 3840×2160 (2x) antes do `zoompan` |
 | 2026-11-20 | Fase 6 (pós-teste) | VHS só amarelava a imagem | Trocado por granulado leve, vinheta e granulado+vinheta; fade mantido |
 | 2026-11-20 | Fase 6 (pós-teste) | Crédito do vídeo grande demais, quebrava feio no fim | Padrão 38 (era 44) + seletor pequeno/médio/grande no modal (apagado sem atribuição) |
+| 2026-11-20 | Fase 6 (pós-teste 2) | Zoom ainda com micro-tremidas; `scale+crop` não resolve (cv 0.24 vs 0.26) | Zoom renderiza a 60fps (passo por frame cai pela metade); pan continua 30fps |
+| 2026-11-20 | Fase 6 (pós-teste 2) | Granulado `alls=5` invisível em foto real | `alls=12` (CRF 26 contém o tamanho) |
 
 ---
 

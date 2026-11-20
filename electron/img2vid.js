@@ -20,6 +20,8 @@ const { resolveFfmpeg, resolveMagick, runBin, poppinsPath } = require('./tools')
 
 const VID_W = 1920, VID_H = 1080, FPS = 30, DUR = 5;
 const FRAMES = FPS * DUR;
+// zoom roda a 60fps: o passo por frame cai pela metade e o jitter some
+const ZFPS = 60, ZFRAMES = ZFPS * DUR;
 const UA = 'broll/0.2 (https://github.com/Saimonsanbr/broll)';
 
 const COMPOSITIONS = ['single', 'duo'];
@@ -58,15 +60,15 @@ function composeFilters(composition, background, anim) {
 
 function animFilter(anim) {
   const zc = `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`;
-  if (anim === 'zoom-out') return `[c]zoompan=z='1.125-0.125*on/${FRAMES}':${zc}:d=${FRAMES}:s=${VID_W}x${VID_H}:fps=${FPS}[a]`;
+  if (anim === 'zoom-out') return `[c]zoompan=z='1.125-0.125*on/${ZFRAMES}':${zc}:d=${ZFRAMES}:s=${VID_W}x${VID_H}:fps=${ZFPS}[a]`;
   if (anim === 'pan-down') return `[c]crop=${VID_W}:${VID_H}:x='(in_w-${VID_W})/2':y='(in_h-${VID_H})*n/${FRAMES}'[a]`;
   if (anim === 'pan-up') return `[c]crop=${VID_W}:${VID_H}:x='(in_w-${VID_W})/2':y='(in_h-${VID_H})*(1-n/${FRAMES})'[a]`;
-  return `[c]zoompan=z='1+0.125*on/${FRAMES}':${zc}:d=${FRAMES}:s=${VID_W}x${VID_H}:fps=${FPS}[a]`;
+  return `[c]zoompan=z='1+0.125*on/${ZFRAMES}':${zc}:d=${ZFRAMES}:s=${VID_W}x${VID_H}:fps=${ZFPS}[a]`;
 }
 
 function effectFilter(filter) {
-  if (filter === 'grain-vignette') return '[a]noise=alls=5:allf=t,vignette=PI/4[e]';
-  if (filter === 'grain') return '[a]noise=alls=5:allf=t[e]';
+  if (filter === 'grain-vignette') return '[a]noise=alls=12:allf=t,vignette=PI/4[e]';
+  if (filter === 'grain') return '[a]noise=alls=12:allf=t[e]';
   if (filter === 'vignette') return '[a]vignette=PI/4[e]';
   if (filter === 'fade') return '[a]fade=t=in:st=0:d=0.5,fade=t=out:st=4.5:d=0.5[e]';
   return '[a]null[e]';
@@ -156,8 +158,10 @@ async function generate(app, store, args, onProgress) {
     }
 
     // 2. faixa de crédito (quando exigido)
+    const isZoom = anim === 'zoom-in' || anim === 'zoom-out';
+    const afps = isZoom ? ZFPS : FPS;
     let filterComplex = `${composeFilters(composition, background, anim)};${animFilter(anim)};${effectFilter(filter)}`;
-    let inputs = ['-loop', '1', '-framerate', String(FPS), '-t', String(DUR), '-i', src];
+    let inputs = ['-loop', '1', '-framerate', String(afps), '-t', String(DUR), '-i', src];
     if (needsCredit) {
       const strip = await makeCreditStrip(magickBin, item.attribution.text, path.join(tmpd, 'strip.png'), options.creditSize);
       inputs = inputs.concat(['-i', strip]);
@@ -174,7 +178,7 @@ async function generate(app, store, args, onProgress) {
       const crf = (filter === 'grain' || filter === 'grain-vignette') ? '26' : '20'; // ruído não comprime: crf maior
       const ffargs = ['-y', '-hide_banner', '-nostats', '-progress', 'pipe:1',
         ...inputs, '-filter_complex', filterComplex,
-        '-map', '[v]', '-r', String(FPS), '-t', String(DUR),
+        '-map', '[v]', '-r', String(afps), '-t', String(DUR),
         '-c:v', 'libx264', '-preset', 'medium', '-crf', crf, '-pix_fmt', 'yuv420p',
         '-movflags', '+faststart', out];
       const child = spawn(ffmpeg, ffargs, { windowsHide: true });
