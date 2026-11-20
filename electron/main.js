@@ -155,6 +155,7 @@ function normalizePexelsWeb(v, maxQuality) {
   const vid = a.id || v.id;
   return {
     id: `pexels-${vid}`,
+    kind: 'video',
     source: 'pexels-web',
     width: chosen.width, height: chosen.height,
     q: Math.min(chosen.width, chosen.height),
@@ -276,6 +277,7 @@ ipcMain.handle('search:videos', async (_e, { query, pages = { pex: 1, pix: 1 }, 
         if (!chosen) continue;
         out.push({
           id: `pexels-${v.id}`,
+          kind: 'video',
           source: 'pexels',
           width: chosen.width, height: chosen.height,
           q: Math.min(chosen.width, chosen.height),
@@ -325,6 +327,7 @@ ipcMain.handle('search:videos', async (_e, { query, pages = { pex: 1, pix: 1 }, 
         if (!chosen) continue;
         out.push({
           id: `pixabay-${h.id}`,
+          kind: 'video',
           source: 'pixabay',
           width: chosen.width, height: chosen.height,
           q: Math.min(chosen.width, chosen.height),
