@@ -55,7 +55,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system
 .card.image img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#000;border-radius:8px;-webkit-user-drag:none}
 .card .kind{position:absolute;left:8px;top:8px;display:flex;align-items:center;padding:3px;border-radius:8px;background:#000000aa;color:#fff;pointer-events:none}
 .card .kind svg{width:14px;height:14px;display:block}
-.card .lic{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);font-size:10.5px;color:#fff;text-shadow:0 1px 4px #000,0 0 2px #000;background:#00000055;padding:2px 7px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.card .lic{position:absolute;left:8px;bottom:43px;max-width:calc(100% - 16px);font-size:10.5px;color:#fff;text-shadow:0 1px 4px #000,0 0 2px #000;background:#00000055;padding:2px 7px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .card.ready{border-color:var(--green);cursor:grab}
 .card .meta{display:flex;align-items:center;gap:6px;padding:7px 8px;font-size:12px;color:var(--mut)}
 .card .meta .src{font-size:10.5px;padding:2px 7px;border-radius:20px;background:#00000060;border:1px solid var(--line);color:var(--txt)}

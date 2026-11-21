@@ -328,7 +328,7 @@ imagem original (sem crédito)
 - Aspect ratio própria para imagem (a definir no teste visual; provavelmente 4:5 ou 1:1).
 - Preview no hover (imagem é barata; pode ser `<img>` direto).
 - Clique baixa; contorno verde quando pronto; arrasta como os vídeos.
-- Texto pequeno no topo com fonte e licença, com sombra. **Sem ícone de licença** (o único ícone do card é o de tipo de mídia, descrito em 5.6).
+- Texto pequeno no canto **inferior esquerdo, sobre a mídia** (acima da faixa do autor), com sombra. **Sem ícone de licença** (o único ícone do card é o de tipo de mídia, descrito em 5.6).
 - Selo/ação de “Gerar vídeo” no botão direito quando pronta.
 
 ### 5.4 Crédito
