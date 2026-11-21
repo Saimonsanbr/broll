@@ -1,6 +1,6 @@
 {
   "name": "broll",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Busque b-roll no Pexels + Pixabay, preview no hover, 1 clique baixa, arraste pronto pro CapCut.",
   "main": "electron/main.js",
   "scripts": {
